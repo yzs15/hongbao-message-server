@@ -1,0 +1,104 @@
+'【腾讯文档】红包应用前后端设计文档
+' https://docs.qq.com/doc/DR2JWSHROdFVIa1pi?scene=9d85dbc12aeaeb552f9262e7QxR6n1
+
+@startuml
+
+set namespaceSeparator ::
+
+class Message {
+    ID String
+    Sender String
+    Good Bool
+    Content String
+}
+
+class WebSocketServer {
+    Run()
+}
+
+class CZMQServer {
+    Run()
+}
+
+interface MessageServer {
+    Handle(receiveTime, []byte)
+}
+note left of MessageServer::Handle
+    record two logs
+end note
+
+
+class WangMS implements MessageServer {
+    Handle(receiveTime, []byte)
+    HandleWang(Message) : sendTime
+    HandleThing(Message) : sendTime
+}
+
+
+class ThingMS implements MessageServer {
+    thingMsgHandler ThingMsgHandler
+
+    Handle(receiveTime, []byte)
+    HandleWang(Message) : sendTime
+    HandleThing(Message) : sendTime
+}
+note right of ThingMS::HandleThing
+    invoke thingMsgHandler.Handle()
+end note
+
+interface ThingMsgHandler {
+    Handle(Message) : sendTime
+}
+
+class NetThingMsgHandler implements ThingMsgHandler {
+    Handle(Message) : sendTime
+}
+note left of NetThingMsgHandler 
+    make a HTTP request to Kubernetes and 
+    send the response to Wang
+end note
+
+class SpbThingMsgHandler implements ThingMsgHandler {
+    Handle(Message) : sendTime
+}
+note right of SpbThingMsgHandler 
+    package a Task and
+    submit to Superbahn
+end note
+
+
+WebSocketServer --> MessageServer 
+CZMQServer --> MessageServer
+ThingMS --> ThingMsgHandler
+
+enum EventType {
+    SenderSended
+    SenderMsgSvrReceived
+    SenderMsgSvrSended
+    ReceiverMsgSvrReceived
+    ReceiverMsgSvrSended
+    ReceiverReceived
+}
+
+class Log {
+    MID String
+    Timestamp time.Time
+    Event EventType
+}
+
+class LogHttpServer {
+
+}
+
+class LogStore {
+    Logs []Log
+    Add(mid, timestamp, event)
+}
+
+LogHttpServer --> LogStore
+WangMS --> LogStore
+ThingMS --> LogStore
+
+
+
+@enduml
