@@ -3,10 +3,10 @@ package msgserver
 import "time"
 
 type Message struct {
-	ID      uint64
-	Sender  uint32
-	Good    bool
-	Content string
+	ID      uint64 `json:"ID,omitempty"`
+	Sender  uint32 `json:"Sender,omitempty"`
+	Good    bool   `json:"Good,omitempty"`
+	Content string `json:"Content,omitempty"`
 }
 
 type MessageServer interface {

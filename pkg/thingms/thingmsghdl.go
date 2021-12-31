@@ -1,7 +1,11 @@
 package thingms
 
-import "time"
+import (
+	"time"
+
+	"ict.ac.cn/hbmsgserver/pkg/msgserver"
+)
 
 type ThingMsgHandler interface {
-	Handle(msg msgserver.Message) time.Time
+	Handle(msg *msgserver.Message) (time.Time, error)
 }
