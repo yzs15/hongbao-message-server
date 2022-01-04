@@ -22,21 +22,28 @@ type ThingMS struct {
 func (s *ThingMS) Handle(receiveTime time.Time, msgRaw []byte) {
 	msgBytes := bytes.Split(msgRaw, []byte{'\n'})
 	for _, msgByte := range msgBytes {
-		msg := &msgserver.Message{}
-		if err := json.Unmarshal(msgByte, msg); err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		go func() {
-			if msg.Sender == 0 {
+		go func(msgByte []byte) {
+			if msgByte[0] == '{' { // receive one JSON message from Wang
+				msg := &msgserver.Message{}
+				if err := json.Unmarshal(msgByte, msg); err != nil {
+					fmt.Println(err)
+					return
+				}
 				s.handleWang(msg)
 				s.LogStore.Add(msg.ID, receiveTime, logstore.SenderMsgSvrReceived)
-			} else {
-				s.handleThing(msg)
-				s.LogStore.Add(msg.ID, receiveTime, logstore.ReceiverMsgSvrReceived)
+
+			} else { // receive one BLOB message from Thing
+				task := ParseTask(msgByte)
+				if task.ServiceID == 0 {
+					s.LogStore.Add(task.ID, time.Unix(0, int64(task.SendTime)), logstore.ReceiverReceived)
+
+				} else {
+					s.handleThing(task)
+					s.LogStore.Add(task.ID, time.Unix(0, int64(task.SendTime)), logstore.SenderSended)
+					s.LogStore.Add(task.ID, receiveTime, logstore.ReceiverMsgSvrReceived)
+				}
 			}
-		}()
+		}(msgByte)
 	}
 }
 
@@ -52,11 +59,11 @@ func (s *ThingMS) handleWang(msg *msgserver.Message) {
 	s.LogStore.Add(msg.ID, sendTime, logstore.SenderMsgSvrSended)
 }
 
-func (s *ThingMS) handleThing(msg *msgserver.Message) {
-	sendTime, err := s.ThingMsgHdl.Handle(msg)
+func (s *ThingMS) handleThing(task *Task) {
+	sendTime, err := s.ThingMsgHdl.Handle(task)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	s.LogStore.Add(msg.ID, sendTime, logstore.ReceiverMsgSvrSended)
+	s.LogStore.Add(task.ID, sendTime, logstore.ReceiverMsgSvrSended)
 }

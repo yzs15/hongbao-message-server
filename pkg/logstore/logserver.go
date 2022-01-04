@@ -1,6 +1,7 @@
 package logstore
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -16,7 +17,15 @@ func (s *LogServer) Run() {
 
 	// TODO develop the handle to get all logs
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Print("not implemented")
+		txt, err := json.Marshal(s.LogStore.logs)
+		if err != nil {
+			fmt.Println("json encode logs failed: ", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(txt)
 	})
 
 	fmt.Printf("log server listen at: %s\n", s.Addr)

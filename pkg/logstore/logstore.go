@@ -1,22 +1,22 @@
 package logstore
 
 import (
-	"sync"
 	"time"
 )
 
 type LogStore struct {
 	logs []*Log
 
-	mu sync.Mutex
-
 	add chan *Log
+
+	me string
 }
 
-func NewLogStore() *LogStore {
+func NewLogStore(me string) *LogStore {
 	return &LogStore{
 		logs: make([]*Log, 0),
 		add:  make(chan *Log, 1024),
+		me:   me,
 	}
 }
 
@@ -25,6 +25,7 @@ func (s *LogStore) Add(mid uint64, timestamp time.Time, event EventType) {
 		MID:       mid,
 		Timestamp: timestamp,
 		Event:     event,
+		Me:        s.me,
 	}
 	s.add <- log
 }

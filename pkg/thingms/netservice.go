@@ -1,23 +1,19 @@
 package thingms
 
 import (
-	"fmt"
 	"io"
 )
 
 type NetService struct {
 	Method string
-	Query  string
-	File   string
+	Path   func(args []byte) string
+	Body   func(args []byte) io.Reader
 }
 
-func (s *NetService) getPath(query string) string {
-	if len(s.Query) > 0 {
-		return fmt.Sprintf("/?%s=%s", s.Query, query)
-	}
-	return "/"
-}
-
-func (s *NetService) getBody(file string) io.Reader {
+func NilBody(args []byte) io.Reader {
 	return nil
+}
+
+func NilPath(args []byte) string {
+	return "/"
 }

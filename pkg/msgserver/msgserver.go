@@ -3,9 +3,9 @@ package msgserver
 import "time"
 
 type Message struct {
-	ID      uint64 `json:"ID,omitempty"`
-	Sender  uint32 `json:"Sender,omitempty"`
-	Good    bool   `json:"Good,omitempty"`
+	ID      uint64 `json:"ID"`
+	Sender  uint32 `json:"Sender"`
+	Good    uint8  `json:"Good,omitempty"`
 	Content string `json:"Content,omitempty"`
 }
 

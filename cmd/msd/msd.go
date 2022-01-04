@@ -48,6 +48,8 @@ func main() {
 	flag.Var(&kubeEnds, "kend", "kubernetes' http endpoint")
 	flag.Parse()
 
+	var me string
+
 	if *isNet {
 		fmt.Println("run in internet")
 	} else if *isSpb {
@@ -56,13 +58,15 @@ func main() {
 	if *isWang {
 		fmt.Printf("this is Wang\n")
 		fmt.Printf("thing czmq endpoints: %v\n", thingEnds)
+		me = "WangMS"
 	} else if *isThing {
 		fmt.Printf("this is one Thing\n")
 		fmt.Printf("wang czmq endpoint: %v\n", *wangEnd)
 		fmt.Printf("kube http endpoints: %v\n", kubeEnds)
+		me = "ThingMS"
 	}
 
-	logStore := logstore.NewLogStore()
+	logStore := logstore.NewLogStore(me)
 	go logStore.Run()
 
 	wsHub := wshub.NewHub()
@@ -117,15 +121,21 @@ func main() {
 	logServer.Run()
 }
 
-func buildNetSvs() map[string]*thingms.NetService {
-	svs := make(map[string]*thingms.NetService)
+func buildNetSvs() map[uint8]*thingms.NetService {
+	svs := make(map[uint8]*thingms.NetService)
 
 	fibSvs := &thingms.NetService{
 		Method: "GET",
-		Query:  "num",
-		File:   "",
+		Path: func(args []byte) string {
+			if len(args) > 0 {
+				return fmt.Sprintf("/?num=%s", args)
+			}
+			return "/"
+		},
+		Body: thingms.NilBody,
 	}
-	svs["fib"] = fibSvs
+
+	svs[1] = fibSvs
 
 	return svs
 }

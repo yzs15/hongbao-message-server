@@ -2,8 +2,6 @@ package thingms
 
 import (
 	"time"
-
-	"ict.ac.cn/hbmsgserver/pkg/msgserver"
 )
 
 type spbThingMsgHandler struct {
@@ -13,6 +11,6 @@ func NewSpbThingMsgHandler() ThingMsgHandler {
 	return &spbThingMsgHandler{}
 }
 
-func (h *spbThingMsgHandler) Handle(msg *msgserver.Message) (time.Time, error) {
+func (h *spbThingMsgHandler) Handle(task *Task) (time.Time, error) {
 	return time.Time{}, nil
 }

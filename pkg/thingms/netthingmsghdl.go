@@ -20,12 +20,12 @@ type netThingMsgHandler struct {
 	KubeEndpoints []string
 	WangEndpoint  string
 
-	Services map[string]*NetService
+	Services map[uint8]*NetService
 
 	httpCli *http.Client
 }
 
-func NewNetThingMsgHandler(kubeEnds []string, wangEnd string, svs map[string]*NetService) ThingMsgHandler {
+func NewNetThingMsgHandler(kubeEnds []string, wangEnd string, svs map[uint8]*NetService) ThingMsgHandler {
 	cli := &http.Client{
 		Transport: &http.Transport{
 			DialContext: (&net.Dialer{
@@ -37,6 +37,7 @@ func NewNetThingMsgHandler(kubeEnds []string, wangEnd string, svs map[string]*Ne
 			DisableKeepAlives:     true,
 			MaxIdleConnsPerHost:   -1,
 		},
+		Timeout: 3 * time.Second,
 	}
 
 	return &netThingMsgHandler{
@@ -47,23 +48,16 @@ func NewNetThingMsgHandler(kubeEnds []string, wangEnd string, svs map[string]*Ne
 	}
 }
 
-func (h *netThingMsgHandler) Handle(msg *msgserver.Message) (time.Time, error) {
-	content := msg.Content
-
-	taskArgs := &Task{}
-	if err := json.Unmarshal([]byte(content), taskArgs); err != nil {
-		return time.Time{}, errors.Wrap(err, "decode task failed")
-	}
-
-	result, err := h.httpReq(taskArgs)
+func (h *netThingMsgHandler) Handle(task *Task) (time.Time, error) {
+	result, err := h.httpReq(task.ServiceID, task.Args)
 	if err != nil {
 		return time.Time{}, err
 	}
 
 	resMsg := &msgserver.Message{
-		ID:      msg.ID,
-		Sender:  msg.Sender,
-		Good:    msg.Good,
+		ID:      task.ID,
+		Sender:  task.Sender,
+		Good:    task.Good,
 		Content: result,
 	}
 	resRaw, err := json.Marshal(resMsg)
@@ -78,11 +72,11 @@ func (h *netThingMsgHandler) Handle(msg *msgserver.Message) (time.Time, error) {
 	return sendTime, nil
 }
 
-func (h *netThingMsgHandler) httpReq(taskArgs *Task) (string, error) {
-	service := h.Services[taskArgs.Name]
+func (h *netThingMsgHandler) httpReq(svcId uint8, args []byte) (string, error) {
+	service := h.Services[svcId]
 
-	path := service.getPath(taskArgs.Query)
-	body := service.getBody(taskArgs.File)
+	path := service.Path(args)
+	body := service.Body(args)
 	endpoint := h.KubeEndpoints[rand.Intn(len(h.KubeEndpoints))]
 	url := fmt.Sprintf("http://%s%s", endpoint, path)
 
