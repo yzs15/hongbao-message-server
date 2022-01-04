@@ -90,7 +90,7 @@ func main() {
 		msgServer = &wangms.WangMS{
 			LogStore:    logStore,
 			WsHub:       wsHub,
-			ThingMsEnds: []string{""},
+			ThingMsEnds: thingEnds,
 		}
 
 	} else {

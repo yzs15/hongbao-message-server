@@ -11,7 +11,8 @@ NAME=$1
 
 if [ "wang" = $NAME ]; then
   go run cmd/msd/msd.go -wang \
-      -net
+      -net \
+      -tend tcp://127.0.0.1:5543
 
 elif [ "thing" = $NAME ]; then
   go run cmd/msd/msd.go -thing \
