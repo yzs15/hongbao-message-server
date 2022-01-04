@@ -18,7 +18,7 @@ type WangMS struct {
 	LogStore *logstore.LogStore
 	WsHub    *wshub.Hub
 
-	MsEndpoints []string
+	ThingMsEnds []string
 }
 
 func (s *WangMS) Handle(receiveTime time.Time, msgRaw []byte) {
@@ -49,7 +49,7 @@ func (s *WangMS) handleWang(msg *msgserver.Message) {
 		return
 	}
 
-	for _, endpoint := range s.MsEndpoints {
+	for _, endpoint := range s.ThingMsEnds {
 		sendTime := time.Now()
 		if err := czmqutils.Send(endpoint, msgRaw); err == nil {
 			s.LogStore.Add(msg.ID, sendTime, logstore.ReceiverMsgSvrSended)

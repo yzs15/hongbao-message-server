@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	thingEnd := "tcp://127.0.0.1:5553"
+	thingEnd := "tcp://172.17.0.1:5543"
 
 	task := &thingms.Task{
 		Name:  "fib",
