@@ -15,5 +15,3 @@ RUN go get github.com/gorilla/websocket && \
 
 COPY ./ /hongbao-ms
 RUN GOPROXY=https://goproxy.io,direct go build -o /usr/local/bin/msd cmd/msd/msd.go
-
-CMD ["msd"]
