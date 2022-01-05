@@ -119,9 +119,9 @@ type spbThingMsgHandler struct {
 	Task_config_file string
 }
 
-func NewSpbThingMsgHandler() ThingMsgHandler {
+func NewSpbThingMsgHandler(spbConfig string) ThingMsgHandler {
 	rand.Seed(time.Now().UnixNano())
-	client_config_file, err := ioutil.ReadFile("client.config")
+	client_config_file, err := ioutil.ReadFile(spbConfig)
 	if err != nil {
 		fmt.Print("[C] Open Client Config File Error", err)
 	}
@@ -134,12 +134,13 @@ func NewSpbThingMsgHandler() ThingMsgHandler {
 	defer send_task.Destroy()
 
 	worker_id := commit_worker(send_worker, client_config.Worker_path+client_config.Worker_filename, client_config.Worker_priority)
+	task_config_file := client_config.Task_path + client_config.Task_config_list[0]
 
 	return &spbThingMsgHandler{
 		Worker_id:        worker_id,
 		Send_task:        send_task,
 		With_body:        true,
-		Task_config_file: "./infospb/task/task.config",
+		Task_config_file: task_config_file,
 	}
 }
 

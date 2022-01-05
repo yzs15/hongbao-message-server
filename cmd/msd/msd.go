@@ -43,6 +43,8 @@ var wangEnd = flag.String("wend", "tcp://127.0.0.1:5553", "Wang's czmq endpoint"
 var thingEnds StringArrFlag
 var kubeEnds StringArrFlag
 
+var spbConfig = flag.String("spbcfg", "./bin/infospb/client.config", "config file for info superbahn")
+
 func main() {
 	flag.Var(&thingEnds, "tend", "thing's czmq endpoint")
 	flag.Var(&kubeEnds, "kend", "kubernetes' http endpoint")
@@ -79,7 +81,7 @@ func main() {
 			svs := buildNetSvs()
 			thingMsgHdl = thingms.NewNetThingMsgHandler(kubeEnds, *wangEnd, svs)
 		} else if *isSpb {
-			thingMsgHdl = thingms.NewSpbThingMsgHandler()
+			thingMsgHdl = thingms.NewSpbThingMsgHandler(*spbConfig)
 		} else {
 			panic("need to specify environment by '--net' or '--spb'")
 		}
