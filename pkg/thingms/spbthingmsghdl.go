@@ -131,7 +131,6 @@ func NewSpbThingMsgHandler(spbConfig string) ThingMsgHandler {
 	send_worker, err := goczmq.NewReq(client_config.Worker_send_endpoint)
 	defer send_worker.Destroy()
 	send_task, _ := goczmq.NewReq(client_config.Task_send_endpoint)
-	defer send_task.Destroy()
 
 	worker_id := commit_worker(send_worker, client_config.Worker_path+client_config.Worker_filename, client_config.Worker_priority)
 	task_config_file := client_config.Task_path + client_config.Task_config_list[0]
