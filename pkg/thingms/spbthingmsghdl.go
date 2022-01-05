@@ -172,7 +172,7 @@ func (h *spbThingMsgHandler) Handle(task *Task) (time.Time, error) {
 	var task_info TaskPackageInfo
 	copy(task_info.From[:], []byte(task_config.From))
 	copy(task_info.To[:], []byte(task_config.To))
-	task_info.Task_sub_id = get_fake_task_sub_id()
+	task_info.Task_sub_id = task.ID
 	task_info.Task_type = FUNCTION
 	task_info.Task_body_id = task_config.Task_body_id
 	task_info.Worker_id = worker_id
