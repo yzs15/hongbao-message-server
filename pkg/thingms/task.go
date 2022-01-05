@@ -3,6 +3,7 @@ package thingms
 import (
 	"bytes"
 	"encoding/binary"
+	"math/rand"
 )
 
 type Task struct {
@@ -57,4 +58,21 @@ func ParseTask(raw []byte) *Task {
 	task.Args = raw[i:]
 
 	return task
+}
+
+func (t *Task) Clone() *Task {
+	c := &Task{
+		ID:        t.ID,
+		Sender:    t.Sender,
+		Good:      t.Good,
+		ServiceID: t.ServiceID,
+		SendTime:  t.SendTime,
+	}
+	c.Args = make([]byte, len(t.Args))
+	copy(c.Args, t.Args)
+	return c
+}
+
+func GenerateTID(sender uint32) uint64 {
+	return uint64(sender)<<32 | uint64(rand.Uint32())
 }

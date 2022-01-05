@@ -27,15 +27,16 @@ func (s *CZMQServer) Run() {
 	fmt.Printf("zmq server listen at: %s\n", s.Addr)
 
 	for {
-		// FIXME 随机出现 'recv frame error' 错误
+		// FIXME 随机出现 'recv frame error' 错误，目前采用忽略的方式
 		msgRaws, err := pullSock.RecvMessage()
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
+			continue
 		}
 		msgRaw := bytes.Join(msgRaws, []byte{})
 
 		receiveTime := time.Now()
 		go s.MsgServer.Handle(receiveTime, msgRaw)
-		fmt.Printf("recevie a zmq message: %s\n", msgRaw)
+		fmt.Printf("recevie a zmq message, size: %d\n", len(msgRaw))
 	}
 }

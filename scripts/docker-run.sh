@@ -12,6 +12,7 @@ NAME=$1
 HOST_IP=$(ifconfig docker0 | grep inet | awk 'NR==1{print $2}')
 
 docker pull registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:msd
+docker rmi $(docker image ls -f dangling=true -q)
 if [ "wang" = $NAME ]; then
   docker stop wangmsd
   docker rm wangmsd
@@ -39,10 +40,7 @@ elif [ "thing" = $NAME ]; then
       -log  0.0.0.0:5542 \
       -net \
       -wend tcp://$HOST_IP:5553 \
-      -kend 172.16.32.13:32101 \
-      -kend 172.16.32.14:32101 \
-      -kend 172.16.32.15:32101
-
-else
-  echo "usage: run.sh NAME"
+      -kend 172.16.32.13 \
+      -kend 172.16.32.14 \
+      -kend 172.16.32.15
 fi

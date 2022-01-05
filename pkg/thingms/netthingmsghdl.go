@@ -76,14 +76,15 @@ func (h *netThingMsgHandler) httpReq(svcId uint8, args []byte) (string, error) {
 	service := h.Services[svcId]
 
 	path := service.Path(args)
-	body := service.Body(args)
+	body, contentType := service.Body(args)
 	endpoint := h.KubeEndpoints[rand.Intn(len(h.KubeEndpoints))]
-	url := fmt.Sprintf("http://%s%s", endpoint, path)
+	url := fmt.Sprintf("http://%s:%s%s", endpoint, service.Port, path)
 
 	req, err := http.NewRequest(service.Method, url, body)
 	if err != nil {
 		return "", errors.Wrap(err, "create http request failed")
 	}
+	req.Header.Set("Content-Type", contentType)
 
 	resp, err := h.httpCli.Do(req)
 	if err != nil {

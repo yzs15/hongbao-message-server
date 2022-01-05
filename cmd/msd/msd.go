@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"strings"
 
 	"ict.ac.cn/hbmsgserver/pkg/msgserver"
@@ -126,6 +129,7 @@ func buildNetSvs() map[uint8]*thingms.NetService {
 
 	fibSvs := &thingms.NetService{
 		Method: "GET",
+		Port:   "32101",
 		Path: func(args []byte) string {
 			if len(args) > 0 {
 				return fmt.Sprintf("/?num=%s", args)
@@ -135,7 +139,33 @@ func buildNetSvs() map[uint8]*thingms.NetService {
 		Body: thingms.NilBody,
 	}
 
-	svs[1] = fibSvs
+	numrecdSvs := &thingms.NetService{
+		Method: "POST",
+		Port:   "32100",
+		Path:   thingms.NilPath,
+		Body: func(args []byte) (io.Reader, string) {
+			var b bytes.Buffer
+			w := multipart.NewWriter(&b)
+
+			fw, err := w.CreateFormFile("img", "num")
+			if err != nil {
+				fmt.Println(err)
+				return nil, ""
+			}
+
+			_, err = fw.Write(args)
+			if err != nil {
+				fmt.Println(err)
+				return nil, ""
+			}
+			w.Close()
+
+			return &b, w.FormDataContentType()
+		},
+	}
+
+	svs[1] = numrecdSvs
+	svs[2] = fibSvs
 
 	return svs
 }

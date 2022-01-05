@@ -9,6 +9,10 @@ RUN apt-get update && \
         apt-key add /Release.key && \
         apt-get -y --no-install-recommends install libczmq-dev
 
+RUN go get github.com/gorilla/websocket && \
+        go get github.com/pkg/errors && \
+        go get gopkg.in/zeromq/goczmq.v4
+
 COPY ./ /hongbao-ms
 RUN GOPROXY=https://goproxy.io,direct go build -o /usr/local/bin/msd cmd/msd/msd.go
 
