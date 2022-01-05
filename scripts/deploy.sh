@@ -5,6 +5,9 @@ cd ..
 SERVER="kbnj1"
 PRO_DIR="~/projects/hongbao-ms"
 
+SERVER="hbnj1"
+PRO_DIR="~/projects/hongbao-ms"
+
 SESSION_NAME="ms"
 
 bash scripts/build.sh

@@ -24,7 +24,7 @@ if [ "wang" = $NAME ]; then
       -ws   0.0.0.0:5554 \
       -zmq  tcp://0.0.0.0:5553 \
       -log  0.0.0.0:5552 \
-      -net \
+      -spb \
       -tend tcp://$HOST_IP:5543
 
 
@@ -38,7 +38,7 @@ elif [ "thing" = $NAME ]; then
       -ws   0.0.0.0:5544 \
       -zmq  tcp://0.0.0.0:5543 \
       -log  0.0.0.0:5542 \
-      -net \
+      -spb \
       -wend tcp://$HOST_IP:5553 \
       -kend 172.16.32.13 \
       -kend 172.16.32.14 \

@@ -3,6 +3,7 @@ package fakething
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -29,7 +30,7 @@ type Thing struct {
 	MsgWsEnd  string
 	MsgZmqEnd string
 
-	Task *thingms.Task
+	Tasks []*thingms.Task
 
 	Mode Mode
 
@@ -42,14 +43,14 @@ type Thing struct {
 }
 
 func (c *Thing) Run() {
-	receiveTime := c.waitFirst()
-	good := receiveTime.Before(c.ExpectedTime)
-	if good {
-		c.Task.Good = 1
-		timeutils.SleepUtil(c.ExpectedTime)
-	} else {
-		c.Task.Good = 0
-	}
+	//receiveTime := c.waitFirst()
+	//good := receiveTime.Before(c.ExpectedTime)
+	//if good {
+	//	c.Task.Good = 1
+	//	timeutils.SleepUtil(c.ExpectedTime)
+	//} else {
+	//	c.Task.Good = 0
+	//}
 
 	var connDis []int
 	var connSum int
@@ -95,7 +96,7 @@ func (c *Thing) concurrentReq(num int) {
 
 		for ri := 0; ri < curNum; ri++ {
 			go func() {
-				task := c.Task.Clone()
+				task := c.Tasks[rand.Intn(len(c.Tasks))].Clone()
 				task.ID = thingms.GenerateTID(task.Sender)
 				task.SendTime = uint64(time.Now().UnixNano())
 

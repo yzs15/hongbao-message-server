@@ -51,7 +51,7 @@ func main() {
 		MsgWsEnd:  *wsAddr,
 		MsgZmqEnd: *zmqAddr,
 
-		Task: buildNumrecTask(),
+		Tasks: buildNumrecTasks(),
 
 		Mode: fakething.Mode(*modeRaw),
 
@@ -77,13 +77,28 @@ func buildFibTask() *thingms.Task {
 	}
 }
 
-func buildNumrecTask() *thingms.Task {
+func buildNumrecTasks() []*thingms.Task {
 	pngRaw, err := f.ReadFile("nums/0.png")
 	if err != nil {
 		panic(err)
 	}
 
-	return &thingms.Task{
+	pngRaw1, err := f.ReadFile("nums/1.png")
+	if err != nil {
+		panic(err)
+	}
+
+	pngRaw2, err := f.ReadFile("nums/2.png")
+	if err != nil {
+		panic(err)
+	}
+
+	pngRaw3, err := f.ReadFile("nums/3.png")
+	if err != nil {
+		panic(err)
+	}
+
+	task0 := &thingms.Task{
 		ID:        0,
 		Sender:    rand.Uint32(),
 		Good:      1,
@@ -91,4 +106,15 @@ func buildNumrecTask() *thingms.Task {
 		SendTime:  0,
 		Args:      pngRaw,
 	}
+
+	task1 := task0.Clone()
+	task1.Args = pngRaw1
+
+	task2 := task0.Clone()
+	task2.Args = pngRaw2
+
+	task3 := task0.Clone()
+	task3.Args = pngRaw3
+
+	return []*thingms.Task{task0, task1, task2, task3}
 }
