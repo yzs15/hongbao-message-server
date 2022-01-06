@@ -32,8 +32,16 @@ func (s *WangMS) Handle(receiveTime time.Time, msgRaw []byte) {
 
 		go func() {
 			if msg.Sender == 0 {
-				s.handleWang(msg)
-				s.LogStore.Add(msg.ID, receiveTime, logstore.SenderMsgSvrReceived)
+				if msg.Good == 3 {
+					s.LogStore.Add(msg.ID, time.Unix(0, int64(msg.SendTime)), logstore.ReceiverReceived)
+
+				} else {
+					s.LogStore.Add(msg.ID, time.Unix(0, int64(msg.SendTime)), logstore.SenderSended)
+					msg.SendTime = 0
+					s.handleWang(msg)
+					s.LogStore.Add(msg.ID, receiveTime, logstore.SenderMsgSvrReceived)
+				}
+
 			} else {
 				s.handleThing(msg)
 				s.LogStore.Add(msg.ID, receiveTime, logstore.ReceiverMsgSvrReceived)

@@ -100,7 +100,7 @@ func buildNumrecTasks() []*thingms.Task {
 
 	task0 := &thingms.Task{
 		ID:        0,
-		Sender:    rand.Uint32(),
+		Sender:    uint32(rand.Int31n(1 << 20)),
 		Good:      1,
 		ServiceID: 1,
 		SendTime:  0,

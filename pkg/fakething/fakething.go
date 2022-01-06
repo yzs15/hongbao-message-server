@@ -43,14 +43,18 @@ type Thing struct {
 }
 
 func (c *Thing) Run() {
-	//receiveTime := c.waitFirst()
-	//good := receiveTime.Before(c.ExpectedTime)
-	//if good {
-	//	c.Task.Good = 1
-	//	timeutils.SleepUtil(c.ExpectedTime)
-	//} else {
-	//	c.Task.Good = 0
-	//}
+	receiveTime := c.waitFirst()
+	good := receiveTime.Before(c.ExpectedTime)
+	if good {
+		for _, task := range c.Tasks {
+			task.Good = 1
+		}
+		timeutils.SleepUtil(c.ExpectedTime)
+	} else {
+		for _, task := range c.Tasks {
+			task.Good = 0
+		}
+	}
 
 	var connDis []int
 	var connSum int
