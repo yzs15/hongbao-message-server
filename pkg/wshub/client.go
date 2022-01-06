@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"ict.ac.cn/hbmsgserver/pkg/timeutils"
+
 	"ict.ac.cn/hbmsgserver/pkg/msgserver"
 
 	"github.com/gorilla/websocket"
@@ -65,7 +67,7 @@ func (c *Client) ReadPump() {
 		}
 		receiveTime := time.Now()
 		go c.MsgServer.Handle(receiveTime, msgRaw)
-		fmt.Printf("recevie a ws message: %s\n", msgRaw)
+		fmt.Printf("[%s] recevie a ws message: %s\n", timeutils.Time2string(receiveTime), msgRaw)
 	}
 }
 

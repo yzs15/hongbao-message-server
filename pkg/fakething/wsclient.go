@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"time"
 
+	"ict.ac.cn/hbmsgserver/pkg/timeutils"
+
 	"ict.ac.cn/hbmsgserver/pkg/thingms"
 
 	"ict.ac.cn/hbmsgserver/pkg/czmqutils"
@@ -32,7 +34,7 @@ func (t *Thing) waitFirst() time.Time {
 
 	receiveTime := time.Now()
 	go func() {
-		log.Printf("recv: %s", string(msgRaw))
+		log.Printf("[%s] recv: %s", timeutils.Time2string(receiveTime), string(msgRaw))
 		var msg msgserver.Message
 		if err := json.Unmarshal(msgRaw, &msg); err != nil {
 			log.Fatal("json decode message")

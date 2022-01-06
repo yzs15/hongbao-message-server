@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"ict.ac.cn/hbmsgserver/pkg/timeutils"
+
 	"ict.ac.cn/hbmsgserver/pkg/msgserver"
 
 	//"github.com/sirupsen/logrus"
@@ -37,6 +39,6 @@ func (s *CZMQServer) Run() {
 
 		receiveTime := time.Now()
 		go s.MsgServer.Handle(receiveTime, msgRaw)
-		fmt.Printf("recevie a zmq message, size: %d\n", len(msgRaw))
+		fmt.Printf("[%s] recevie a zmq message, size: %d\n", timeutils.Time2string(receiveTime), len(msgRaw))
 	}
 }

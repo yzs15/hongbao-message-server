@@ -1,7 +1,6 @@
 package fakething
 
 import (
-	"fmt"
 	"log"
 	"math/rand"
 	"sync"
@@ -107,7 +106,9 @@ func (c *Thing) concurrentReq(num int) {
 				if err := czmqutils.Send(c.MsgZmqEnd, task.ToBytes()); err != nil {
 					log.Println("czmq send failed: ", err)
 				}
-				fmt.Printf("send a message: %+v\n", task)
+				log.Printf("[%s] send a message, size: %d\n",
+					timeutils.Time2string(time.Unix(0, int64(task.SendTime))),
+					len(task.ToBytes()))
 				wg.Done()
 			}()
 		}
