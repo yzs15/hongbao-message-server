@@ -55,6 +55,8 @@ func (s *WebSocketServer) ServeWs(w http.ResponseWriter, r *http.Request) {
 		msg := msgserver.NewMessage(uint64(time.Now().UnixNano()), uint64(s.Me), idutils.CompleteId(s.Me, cid),
 			msgserver.NameMsg, []byte(cli.Mac))
 		client.Send <- msg
+
+		fmt.Printf("register a client with id:%d, Mac:%s\n", cid, cli.Mac)
 	}()
 
 	// Allow collection of memory referenced by the caller by doing all work in
