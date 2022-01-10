@@ -1,91 +1,89 @@
 package thingms
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
+
+	"ict.ac.cn/hbmsgserver/pkg/nameserver"
+
+	"ict.ac.cn/hbmsgserver/pkg/registry"
+
+	"ict.ac.cn/hbmsgserver/pkg/czmqutils"
+	"ict.ac.cn/hbmsgserver/pkg/idutils"
 
 	"ict.ac.cn/hbmsgserver/pkg/msgserver"
 
 	"ict.ac.cn/hbmsgserver/pkg/logstore"
-	"ict.ac.cn/hbmsgserver/pkg/wshub"
 )
 
 type ThingMS struct {
-	LogStore *logstore.LogStore
-	WsHub    *wshub.Hub
+	Me         uint32
+	Registry   *registry.Registry
+	NameServer *nameserver.NameServer
 
-	ThingMsgHdl ThingMsgHandler
+	TaskMsgHdl TaskMsgHandler
+
+	LogStore *logstore.LogStore
 }
 
-func (s *ThingMS) Handle(receiveTime time.Time, msgRaw []byte) {
-	if msgRaw[0] == '{' { // receive one JSON message from Wang
-		msg := &msgserver.Message{}
-		if err := json.Unmarshal(msgRaw, msg); err != nil {
+func (s *ThingMS) Handle(receiveTime time.Time, msg msgserver.Message) {
+	fmt.Printf("\t%+v\n", msg)
+	svrID := idutils.SvrId32(msg.Receiver())
+	if svrID != s.Me && msg.Type() != msgserver.TaskMsg {
+		s.LogStore.Add(msg.ID(), msg.SendTime(), logstore.SenderSended)
+		s.LogStore.Add(msg.ID(), receiveTime, logstore.SenderMsgSvrReceived)
+
+		svr, err := s.NameServer.GetServer(svrID)
+		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		s.handleWang(msg)
-		s.LogStore.Add(msg.ID, receiveTime, logstore.SenderMsgSvrReceived)
-
-	} else { // receive one BLOB message from Thing
-		task := ParseTask(msgRaw)
-		if task.ServiceID == 0 {
-			s.LogStore.Add(task.ID, time.Unix(0, int64(task.SendTime)), logstore.ReceiverReceived)
-
-		} else {
-			s.handleThing(task)
-			s.LogStore.Add(task.ID, time.Unix(0, int64(task.SendTime)), logstore.SenderSended)
-			s.LogStore.Add(task.ID, receiveTime, logstore.ReceiverMsgSvrReceived)
+		var sendTime time.Time
+		if sendTime, err = czmqutils.Send(svr.ZMQEndpoint, msg); err != nil {
+			fmt.Println(err)
+			return
 		}
+
+		s.LogStore.Add(msg.ID(), sendTime, logstore.SenderMsgSvrSended)
+		return
 	}
 
-	// FIXME 由于二进制消息中可能包含不是 \n 的 \n，因此不能采用 \n 做消息分割
-	//msgBytes := bytes.Split(msgRaw, []byte{'\n'})
-	//msgBytes := [][]byte{msgRaw}
-	//for _, msgByte := range msgBytes {
-	//	go func(msgByte []byte) {
-	//		if msgByte[0] == '{' { // receive one JSON message from Wang
-	//			msg := &msgserver.Message{}
-	//			if err := json.Unmarshal(msgByte, msg); err != nil {
-	//				fmt.Println(err)
-	//				return
-	//			}
-	//			s.handleWang(msg)
-	//			s.LogStore.Add(msg.ID, receiveTime, logstore.SenderMsgSvrReceived)
-	//
-	//		} else { // receive one BLOB message from Thing
-	//			task := ParseTask(msgByte)
-	//			if task.ServiceID == 0 {
-	//				s.LogStore.Add(task.ID, time.Unix(0, int64(task.SendTime)), logstore.ReceiverReceived)
-	//
-	//			} else {
-	//				s.handleThing(task)
-	//				s.LogStore.Add(task.ID, time.Unix(0, int64(task.SendTime)), logstore.SenderSended)
-	//				s.LogStore.Add(task.ID, receiveTime, logstore.ReceiverMsgSvrReceived)
-	//			}
-	//		}
-	//	}(msgByte)
-	//}
+	switch msg.Type() {
+	case msgserver.TextMsg:
+		s.handleText(msg, receiveTime)
+
+	case msgserver.TaskMsg:
+		s.handleTask(msg, receiveTime)
+
+	case msgserver.LogMsg:
+		s.handleLog(msg, receiveTime)
+	}
 }
 
-func (s *ThingMS) handleWang(msg *msgserver.Message) {
-	msgRaw, err := json.Marshal(msg)
+func (s *ThingMS) handleText(msg msgserver.Message, receiveTime time.Time) {
+	cliID := idutils.CliId32(msg.Receiver())
+	cli, err := s.Registry.GetClient(cliID)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	cli.WsClient.Send <- msg
+	s.LogStore.Add(msg.ID(), receiveTime, logstore.ReceiverMsgSvrReceived)
+}
+
+func (s *ThingMS) handleTask(msg msgserver.Message, receiveTime time.Time) {
+	s.LogStore.Add(msg.ID(), msg.SendTime(), logstore.SenderSended)
+	s.LogStore.Add(msg.ID(), receiveTime, logstore.SenderMsgSvrReceived)
+
+	sendTime, err := s.TaskMsgHdl.Handle(msg)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	sendTime := time.Now()
-	s.WsHub.Broadcast <- msgRaw
-	s.LogStore.Add(msg.ID, sendTime, logstore.SenderMsgSvrSended)
+	s.LogStore.Add(msg.ID(), sendTime, logstore.SenderMsgSvrSended)
 }
 
-func (s *ThingMS) handleThing(task *Task) {
-	sendTime, err := s.ThingMsgHdl.Handle(task)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	s.LogStore.Add(task.ID, sendTime, logstore.ReceiverMsgSvrSended)
+func (s *ThingMS) handleLog(msg msgserver.Message, receiveTime time.Time) {
+	s.LogStore.Add(msg.ID(), msg.SendTime(), logstore.ReceiverReceived)
 }

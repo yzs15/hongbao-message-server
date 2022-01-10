@@ -20,6 +20,8 @@ import (
 	"os"
 	"time"
 
+	"ict.ac.cn/hbmsgserver/pkg/msgserver"
+
 	"gopkg.in/zeromq/goczmq.v4"
 )
 
@@ -119,7 +121,7 @@ type spbThingMsgHandler struct {
 	Task_config_file string
 }
 
-func NewSpbThingMsgHandler(spbConfig string) ThingMsgHandler {
+func NewSpbThingMsgHandler(spbConfig string) TaskMsgHandler {
 	rand.Seed(time.Now().UnixNano())
 	client_config_file, err := ioutil.ReadFile(spbConfig)
 	if err != nil {
@@ -143,7 +145,9 @@ func NewSpbThingMsgHandler(spbConfig string) ThingMsgHandler {
 	}
 }
 
-func (h *spbThingMsgHandler) Handle(task *Task) (time.Time, error) {
+func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
+	task := ParseTask(msg.Body())
+
 	worker_id := h.Worker_id
 	send_task := h.Send_task
 	task_config_file, err := ioutil.ReadFile(h.Task_config_file)
@@ -171,7 +175,7 @@ func (h *spbThingMsgHandler) Handle(task *Task) (time.Time, error) {
 	var task_info TaskPackageInfo
 	copy(task_info.From[:], []byte(task_config.From))
 	copy(task_info.To[:], []byte(task_config.To))
-	task_info.Task_sub_id = task.ID
+	task_info.Task_sub_id = msg.ID()
 	task_info.Task_type = FUNCTION
 	task_info.Task_body_id = task_config.Task_body_id
 	task_info.Worker_id = worker_id

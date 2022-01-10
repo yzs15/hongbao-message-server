@@ -1,6 +1,8 @@
 package logstore
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"time"
 )
 
@@ -9,10 +11,10 @@ type LogStore struct {
 
 	add chan *Log
 
-	me string
+	me uint32
 }
 
-func NewLogStore(me string) *LogStore {
+func NewLogStore(me uint32) *LogStore {
 	return &LogStore{
 		logs: make([]*Log, 0),
 		add:  make(chan *Log, 1024),
@@ -25,7 +27,7 @@ func (s *LogStore) Add(mid uint64, timestamp time.Time, event EventType) {
 		MID:       mid,
 		Timestamp: timestamp,
 		Event:     event,
-		Me:        s.me,
+		Me:        uint64(s.me),
 	}
 	s.add <- log
 }
@@ -33,5 +35,10 @@ func (s *LogStore) Add(mid uint64, timestamp time.Time, event EventType) {
 func (s *LogStore) Run() {
 	for log := range s.add {
 		s.logs = append(s.logs, log)
+		txt, err := json.Marshal(s.logs)
+		if err != nil {
+			continue
+		}
+		ioutil.WriteFile("log", txt, 0644)
 	}
 }

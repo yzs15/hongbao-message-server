@@ -1,13 +1,16 @@
 package thingms
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net"
 	"net/http"
 	"time"
+
+	"ict.ac.cn/hbmsgserver/pkg/nameserver"
+
+	"ict.ac.cn/hbmsgserver/pkg/idutils"
 
 	"ict.ac.cn/hbmsgserver/pkg/czmqutils"
 
@@ -18,14 +21,14 @@ import (
 
 type netThingMsgHandler struct {
 	KubeEndpoints []string
-	WangEndpoint  string
-
-	Services map[uint8]*NetService
+	Services      map[uint8]*NetService
 
 	httpCli *http.Client
+
+	NameServer *nameserver.NameServer
 }
 
-func NewNetThingMsgHandler(kubeEnds []string, wangEnd string, svs map[uint8]*NetService) ThingMsgHandler {
+func NewNetThingMsgHandler(kubeEnds []string, svs map[uint8]*NetService, ns *nameserver.NameServer) TaskMsgHandler {
 	cli := &http.Client{
 		Transport: &http.Transport{
 			DialContext: (&net.Dialer{
@@ -42,33 +45,34 @@ func NewNetThingMsgHandler(kubeEnds []string, wangEnd string, svs map[uint8]*Net
 
 	return &netThingMsgHandler{
 		KubeEndpoints: kubeEnds,
-		WangEndpoint:  wangEnd,
 		Services:      svs,
 		httpCli:       cli,
+
+		NameServer: ns,
 	}
 }
 
-func (h *netThingMsgHandler) Handle(task *Task) (time.Time, error) {
+func (h *netThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
+	task := ParseTask(msg.Body())
+
 	result, err := h.httpReq(task.ServiceID, task.Args)
 	if err != nil {
 		return time.Time{}, err
 	}
 
-	resMsg := &msgserver.Message{
-		ID:      task.ID,
-		Sender:  task.Sender,
-		Good:    task.Good,
-		Content: result,
-	}
-	resRaw, err := json.Marshal(resMsg)
+	resMsg := msgserver.NewMessage(msg.ID(), msg.Sender(), msg.Receiver(),
+		msgserver.TextMsg, []byte(result))
+
+	svrID := idutils.SvrId32(msg.Receiver())
+	svr, err := h.NameServer.GetServer(svrID)
 	if err != nil {
-		return time.Time{}, errors.Wrap(err, "encode result failed")
+		return time.Time{}, err
+	}
+	var sendTime time.Time
+	if sendTime, err = czmqutils.Send(svr.ZMQEndpoint, resMsg); err != nil {
+		return time.Time{}, err
 	}
 
-	sendTime := time.Now()
-	if err := czmqutils.Send(h.WangEndpoint, resRaw); err != nil {
-		return time.Time{}, errors.Wrap(err, "czmq send result to Wang failed")
-	}
 	return sendTime, nil
 }
 

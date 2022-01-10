@@ -4,6 +4,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
+
+	"ict.ac.cn/hbmsgserver/pkg/idutils"
+
+	"ict.ac.cn/hbmsgserver/pkg/registry"
 
 	"github.com/gorilla/websocket"
 
@@ -15,6 +20,10 @@ type WebSocketServer struct {
 	Addr      string
 	MsgServer msgserver.MessageServer
 	WsHub     *wshub.Hub
+
+	Registry *registry.Registry
+
+	Me uint32
 }
 
 var upgrader = websocket.Upgrader{
@@ -34,6 +43,19 @@ func (s *WebSocketServer) ServeWs(w http.ResponseWriter, r *http.Request) {
 		MsgServer: s.MsgServer,
 	}
 	s.WsHub.Register <- client
+
+	go func() {
+		cli := &registry.Client{
+			Mac:      r.URL.Query()["mac"][0],
+			Location: "",
+			WsClient: client,
+		}
+		cid := s.Registry.Register(cli)
+
+		msg := msgserver.NewMessage(uint64(time.Now().UnixNano()), uint64(s.Me), idutils.CompleteId(s.Me, cid),
+			msgserver.NameMsg, []byte(cli.Mac))
+		client.Send <- msg
+	}()
 
 	// Allow collection of memory referenced by the caller by doing all work in
 	// new goroutines.

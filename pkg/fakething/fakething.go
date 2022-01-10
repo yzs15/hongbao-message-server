@@ -6,6 +6,10 @@ import (
 	"sync"
 	"time"
 
+	"ict.ac.cn/hbmsgserver/pkg/idutils"
+
+	"ict.ac.cn/hbmsgserver/pkg/msgserver"
+
 	"ict.ac.cn/hbmsgserver/pkg/czmqutils"
 	"ict.ac.cn/hbmsgserver/pkg/mathutils"
 	"ict.ac.cn/hbmsgserver/pkg/thingms"
@@ -16,6 +20,8 @@ const reqWindow = 10 * time.Millisecond
 
 type Mode string
 
+var wangID = idutils.CompleteId(1, 1)
+
 const (
 	Cycle   Mode = "cycle"   // 周期发送
 	Uniform Mode = "uniform" // 均匀分布
@@ -23,7 +29,10 @@ const (
 )
 
 type Thing struct {
-	ID           uint32
+	ID      uint32
+	MacAddr string
+	Me      uint64
+
 	ExpectedTime time.Time
 
 	MsgWsEnd  string
@@ -42,18 +51,7 @@ type Thing struct {
 }
 
 func (c *Thing) Run() {
-	receiveTime := c.waitFirst()
-	good := receiveTime.Before(c.ExpectedTime)
-	if good {
-		for _, task := range c.Tasks {
-			task.Good = 1
-		}
-		timeutils.SleepUtil(c.ExpectedTime)
-	} else {
-		for _, task := range c.Tasks {
-			task.Good = 0
-		}
-	}
+	c.Me = c.waitID()
 
 	var connDis []int
 	var connSum int
@@ -100,15 +98,16 @@ func (c *Thing) concurrentReq(num int) {
 		for ri := 0; ri < curNum; ri++ {
 			go func() {
 				task := c.Tasks[rand.Intn(len(c.Tasks))].Clone()
-				task.ID = thingms.GenerateTID(task.Sender)
-				task.SendTime = uint64(time.Now().UnixNano())
+				msg := msgserver.NewMessage(uint64(time.Now().UnixNano()), c.Me, wangID,
+					msgserver.TaskMsg, task.ToBytes())
 
-				if err := czmqutils.Send(c.MsgZmqEnd, task.ToBytes()); err != nil {
+				msg.SetSendTime()
+				if _, err := czmqutils.Send(c.MsgZmqEnd, msg); err != nil {
 					log.Println("czmq send failed: ", err)
 				}
 				log.Printf("[%s] send a message, size: %d\n",
-					timeutils.Time2string(time.Unix(0, int64(task.SendTime))),
-					len(task.ToBytes()))
+					timeutils.Time2string(msg.SendTime()),
+					len(msg))
 				wg.Done()
 			}()
 		}

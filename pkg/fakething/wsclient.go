@@ -1,57 +1,46 @@
 package fakething
 
 import (
-	"encoding/json"
-	"log"
 	"net/url"
-	"time"
-
-	"ict.ac.cn/hbmsgserver/pkg/timeutils"
-
-	"ict.ac.cn/hbmsgserver/pkg/thingms"
-
-	"ict.ac.cn/hbmsgserver/pkg/czmqutils"
 
 	"ict.ac.cn/hbmsgserver/pkg/msgserver"
 
 	"github.com/gorilla/websocket"
 )
 
-func (t *Thing) waitFirst() time.Time {
+func (t *Thing) waitID() uint64 {
 	u := url.URL{Scheme: "ws", Host: t.MsgWsEnd, Path: "/"}
+	q := u.Query()
+	q.Set("mac", t.MacAddr)
+	u.RawQuery = q.Encode()
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		log.Fatal("dial:", err)
+		panic(err)
 	}
 	defer c.Close()
 
 	_, msgRaw, err := c.ReadMessage()
 	if err != nil {
-		log.Println("read:", err)
-		return time.Time{}
+		panic(err)
 	}
+	msg := msgserver.Message(msgRaw)
 
-	receiveTime := time.Now()
-	go func() {
-		log.Printf("[%s] recv: %s", timeutils.Time2string(receiveTime), string(msgRaw))
-		var msg msgserver.Message
-		if err := json.Unmarshal(msgRaw, &msg); err != nil {
-			log.Fatal("json decode message")
-		}
+	if msg.Type() != msgserver.NameMsg {
+		panic("don't receive the NameMsg")
+	}
+	return msg.Receiver()
 
-		sendMsg := &thingms.Task{
-			ID:        msg.ID,
-			Sender:    t.ID,
-			Good:      1,
-			ServiceID: 0,
-			SendTime:  uint64(receiveTime.UnixNano()),
-			Args:      nil,
-		}
-		if err := czmqutils.Send(t.MsgZmqEnd, sendMsg.ToBytes()); err != nil {
-			log.Fatal(err)
-		}
-	}()
-
-	return receiveTime
+	//receiveTime := time.Now()
+	//go func() {
+	//	log.Printf("[%s] recv: %s", timeutils.Time2string(receiveTime), string(msgRaw))
+	//
+	//	myID := msg.Receiver()
+	//	svrID := idutils.SvrId32(myID)
+	//	sendMsg := msgserver.NewMessage(msg.ID(), myID, uint64(svrID),
+	//		msgserver.LogMsg, nil)
+	//	if _, err := czmqutils.Send(t.MsgZmqEnd, sendMsg); err != nil {
+	//		log.Fatal(err)
+	//	}
+	//}()
 }

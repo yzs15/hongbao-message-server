@@ -13,6 +13,8 @@ import (
 	"ict.ac.cn/hbmsgserver/pkg/fakething"
 )
 
+var macAddr = flag.String("mac", "02:42:ac:12:00:00", "the fake mac addr for this fake thing")
+
 var wsAddr = flag.String("ws", "172.17.0.1:5544", "http service address")
 var zmqAddr = flag.String("zmq", "tcp://172.17.0.1:5543", "czmq service address")
 
@@ -46,6 +48,7 @@ func main() {
 
 	thing := &fakething.Thing{
 		ID:           rand.Uint32(),
+		MacAddr:      *macAddr,
 		ExpectedTime: expected,
 
 		MsgWsEnd:  *wsAddr,
@@ -68,53 +71,25 @@ func main() {
 
 func buildFibTask() *thingms.Task {
 	return &thingms.Task{
-		ID:        0,
-		Sender:    rand.Uint32(),
-		Good:      1,
 		ServiceID: 2,
-		SendTime:  0,
 		Args:      []byte("3"),
 	}
 }
 
 func buildNumrecTasks() []*thingms.Task {
-	pngRaw, err := f.ReadFile("nums/0.png")
-	if err != nil {
-		panic(err)
+	tasks := make([]*thingms.Task, 0)
+
+	for i := 0; i < 4; i++ {
+		pngRaw, err := f.ReadFile(fmt.Sprintf("nums/%d.png", i))
+		if err != nil {
+			panic(err)
+		}
+
+		task := &thingms.Task{
+			ServiceID: 1,
+			Args:      pngRaw,
+		}
+		tasks = append(tasks, task)
 	}
-
-	pngRaw1, err := f.ReadFile("nums/1.png")
-	if err != nil {
-		panic(err)
-	}
-
-	pngRaw2, err := f.ReadFile("nums/2.png")
-	if err != nil {
-		panic(err)
-	}
-
-	pngRaw3, err := f.ReadFile("nums/3.png")
-	if err != nil {
-		panic(err)
-	}
-
-	task0 := &thingms.Task{
-		ID:        0,
-		Sender:    uint32(rand.Int31n(1 << 20)),
-		Good:      1,
-		ServiceID: 1,
-		SendTime:  0,
-		Args:      pngRaw,
-	}
-
-	task1 := task0.Clone()
-	task1.Args = pngRaw1
-
-	task2 := task0.Clone()
-	task2.Args = pngRaw2
-
-	task3 := task0.Clone()
-	task3.Args = pngRaw3
-
-	return []*thingms.Task{task0, task1, task2, task3}
+	return tasks
 }

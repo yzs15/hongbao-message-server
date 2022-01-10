@@ -6,7 +6,7 @@ type Log struct {
 	MID       uint64
 	Timestamp time.Time
 	Event     EventType
-	Me        string
+	Me        uint64
 }
 
 type EventType string

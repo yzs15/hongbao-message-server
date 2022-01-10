@@ -8,8 +8,9 @@ import (
 	"mime/multipart"
 	"strings"
 
-	"ict.ac.cn/hbmsgserver/pkg/msgserver"
-	"ict.ac.cn/hbmsgserver/pkg/wangms"
+	"ict.ac.cn/hbmsgserver/pkg/nameserver"
+
+	"ict.ac.cn/hbmsgserver/pkg/registry"
 
 	"ict.ac.cn/hbmsgserver/pkg/thingms"
 
@@ -36,40 +37,26 @@ var wsAddr = flag.String("ws", "0.0.0.0:5554", "web socket service address")
 var zmqAddr = flag.String("zmq", "tcp://0.0.0.0:5553", "zmq service address")
 var logAddr = flag.String("log", "0.0.0.0:5552", "log service address")
 
-var isThing = flag.Bool("thing", false, "run as one Thing")
-var isWang = flag.Bool("wang", false, "run as Wang")
-
 var isNet = flag.Bool("net", false, "in internet environment")
 var isSpb = flag.Bool("spb", false, "in superbahn environment")
-
-var wangEnd = flag.String("wend", "tcp://127.0.0.1:5553", "Wang's czmq endpoint")
-var thingEnds StringArrFlag
-var kubeEnds StringArrFlag
-
 var spbConfig = flag.String("spbcfg", "./bin/infospb/client.config", "config file for info superbahn")
 
+var kubeEnds StringArrFlag
+
+var nsEnd = flag.String("nsend", "", "name server endpoint")
+var zmqOutEnd = flag.String("zmq-out", "", "zmq remote connection endpoint")
+
 func main() {
-	flag.Var(&thingEnds, "tend", "thing's czmq endpoint")
 	flag.Var(&kubeEnds, "kend", "kubernetes' http endpoint")
 	flag.Parse()
 
-	var me string
+	if *zmqOutEnd == "" || *nsEnd == "" {
+		panic("need '-zmq-out' and '-nsend'")
+	}
+	me := nameserver.Register(*nsEnd, *zmqOutEnd)
+	fmt.Printf("my id is %d\n", me)
 
-	if *isNet {
-		fmt.Println("run in internet")
-	} else if *isSpb {
-		fmt.Println("run in superbahn")
-	}
-	if *isWang {
-		fmt.Printf("this is Wang\n")
-		fmt.Printf("thing czmq endpoints: %v\n", thingEnds)
-		me = "WangMS"
-	} else if *isThing {
-		fmt.Printf("this is one Thing\n")
-		fmt.Printf("wang czmq endpoint: %v\n", *wangEnd)
-		fmt.Printf("kube http endpoints: %v\n", kubeEnds)
-		me = "ThingMS"
-	}
+	ns := nameserver.NewNameServer(*nsEnd, me)
 
 	logStore := logstore.NewLogStore(me)
 	go logStore.Run()
@@ -77,39 +64,34 @@ func main() {
 	wsHub := wshub.NewHub()
 	go wsHub.Run()
 
-	var msgServer msgserver.MessageServer
-	if *isThing {
-		var thingMsgHdl thingms.ThingMsgHandler
-		if *isNet {
-			svs := buildNetSvs()
-			thingMsgHdl = thingms.NewNetThingMsgHandler(kubeEnds, *wangEnd, svs)
-		} else if *isSpb {
-			thingMsgHdl = thingms.NewSpbThingMsgHandler(*spbConfig)
-		} else {
-			panic("need to specify environment by '--net' or '--spb'")
-		}
+	reg := registry.NewRegistry()
+	go reg.Run()
 
-		msgServer = &thingms.ThingMS{
-			LogStore:    logStore,
-			WsHub:       wsHub,
-			ThingMsgHdl: thingMsgHdl,
-		}
-
-	} else if *isWang {
-		msgServer = &wangms.WangMS{
-			LogStore:    logStore,
-			WsHub:       wsHub,
-			ThingMsEnds: thingEnds,
-		}
-
+	var taskMsgHdl thingms.TaskMsgHandler
+	if *isNet {
+		fmt.Println("run in internet")
+		svs := buildNetSvs()
+		taskMsgHdl = thingms.NewNetThingMsgHandler(kubeEnds, svs, ns)
+	} else if *isSpb {
+		fmt.Println("run in superbahn")
+		taskMsgHdl = thingms.NewSpbThingMsgHandler(*spbConfig)
 	} else {
-		panic("need to specify one rule by '-thing' or '-wang'")
+		panic("need to specify environment by '--net' or '--spb'")
+	}
+	msgServer := &thingms.ThingMS{
+		LogStore:   logStore,
+		Registry:   reg,
+		TaskMsgHdl: taskMsgHdl,
+		NameServer: ns,
+		Me:         me,
 	}
 
 	wsServer := &wsserver.WebSocketServer{
 		Addr:      *wsAddr,
 		MsgServer: msgServer,
 		WsHub:     wsHub,
+		Me:        me,
+		Registry:  reg,
 	}
 	go wsServer.Run()
 

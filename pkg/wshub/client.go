@@ -41,6 +41,8 @@ type Client struct {
 
 	// Buffered channel of outbound messages.
 	Send chan []byte
+
+	Down bool
 }
 
 // ReadPump pumps messages from the websocket connection to the Hub.
@@ -50,6 +52,7 @@ type Client struct {
 // reads from this goroutine.
 func (c *Client) ReadPump() {
 	defer func() {
+		c.Down = true
 		c.Hub.Unregister <- c
 		c.Conn.Close()
 	}()
@@ -93,18 +96,18 @@ func (c *Client) WritePump() {
 				return
 			}
 
-			w, err := c.Conn.NextWriter(websocket.TextMessage)
+			w, err := c.Conn.NextWriter(websocket.BinaryMessage)
 			if err != nil {
 				return
 			}
 			w.Write(message)
 
 			// Add queued chat messages to the current websocket message.
-			n := len(c.Send)
-			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-c.Send)
-			}
+			//n := len(c.Send)
+			//for i := 0; i < n; i++ {
+			//	w.Write(newline)
+			//	w.Write(<-c.Send)
+			//}
 
 			if err := w.Close(); err != nil {
 				return
