@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"io"
@@ -143,8 +144,42 @@ func buildNetSvs() map[uint8]*thingms.NetService {
 		},
 	}
 
+	hongbaoSvs := &thingms.NetService{
+		Port:   "32107",
+		Method: "POST",
+		Path: func(args []byte) string {
+			l := binary.LittleEndian.Uint32(args[:4])
+			if len(args) > 0 {
+				return fmt.Sprintf("/?msg=%s", args[4:4+l])
+			}
+			return "/"
+		},
+		Body: func(args []byte) (io.Reader, string) {
+			l := binary.LittleEndian.Uint32(args[:4])
+
+			var b bytes.Buffer
+			w := multipart.NewWriter(&b)
+
+			fw, err := w.CreateFormFile("img", "num")
+			if err != nil {
+				fmt.Println(err)
+				return nil, ""
+			}
+
+			_, err = fw.Write(args[4+l:])
+			if err != nil {
+				fmt.Println(err)
+				return nil, ""
+			}
+			w.Close()
+
+			return &b, w.FormDataContentType()
+		},
+	}
+
 	svs[1] = numrecdSvs
 	svs[2] = fibSvs
+	svs[7] = hongbaoSvs
 
 	return svs
 }

@@ -17,8 +17,9 @@ type Log struct {
 }
 
 func (l *Log) ToCsv() string {
-	return fmt.Sprintf("%s,%s,%d,%s,%s,%s", idutils.String(l.Sender), idutils.String(l.Receiver),
-		l.PtpTimestamp.UnixNano(), idutils.String(l.Me), idutils.String(l.MID), l.Event)
+	return fmt.Sprintf("%s,%s,%s,%d,%s,%s",
+		idutils.String(l.Sender), idutils.String(l.Receiver), idutils.String(l.Me),
+		l.PtpTimestamp.UnixNano(), idutils.String(l.MID), l.Event)
 }
 
 type EventType string
