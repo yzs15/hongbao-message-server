@@ -35,7 +35,6 @@ func (i *StringArrFlag) Set(value string) error {
 
 var wsAddr = flag.String("ws", "0.0.0.0:5554", "web socket service address")
 var zmqAddr = flag.String("zmq", "tcp://0.0.0.0:5553", "zmq service address")
-var logAddr = flag.String("log", "0.0.0.0:5552", "log service address")
 
 var isNet = flag.Bool("net", false, "in internet environment")
 var isSpb = flag.Bool("spb", false, "in superbahn environment")
@@ -101,13 +100,7 @@ func main() {
 		Addr:      *zmqAddr,
 		MsgServer: msgServer,
 	}
-	go zmqServer.Run()
-
-	logServer := &logstore.LogServer{
-		Addr:     *logAddr,
-		LogStore: logStore,
-	}
-	logServer.Run()
+	zmqServer.Run()
 }
 
 func buildNetSvs() map[uint8]*thingms.NetService {
