@@ -52,7 +52,7 @@ func (s *WebSocketServer) ServeWs(w http.ResponseWriter, r *http.Request) {
 		}
 		cid := s.Registry.Register(cli)
 
-		msg := msgserver.NewMessage(uint64(time.Now().UnixNano()), uint64(s.Me), idutils.CompleteId(s.Me, cid),
+		msg := msgserver.NewMessage(uint64(time.Now().UnixNano()), uint64(s.Me), idutils.DeviceId(s.Me, cid),
 			msgserver.NameMsg, []byte(cli.Mac))
 		client.Send <- msg
 

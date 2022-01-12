@@ -5,6 +5,10 @@ import (
 	"encoding/binary"
 	"fmt"
 	"time"
+
+	"ict.ac.cn/hbmsgserver/pkg/idutils"
+
+	"ict.ac.cn/hbmsgserver/pkg/timeutils"
 )
 
 type MessageType uint8
@@ -71,6 +75,10 @@ func (m Message) SendTime() time.Time {
 	return time.Unix(0, int64(binary.LittleEndian.Uint64(m[l-8:])))
 }
 
+func (m Message) SetReceiver(id uint64) {
+	binary.LittleEndian.PutUint64(m[16:24], id)
+}
+
 func (m Message) SetSendTime() {
 	l := len(m)
 	t := time.Now()
@@ -85,5 +93,15 @@ func (m Message) Clone() Message {
 }
 
 func (m Message) String() string {
-	return fmt.Sprintf("Message{%v, %v, %v, %v, %v}", m.ID(), m.Sender(), m.Receiver(), m.Type(), m.SendTime())
+	var content string
+	if len(m.Body()) > 0 {
+		l := 5
+		if len(m.Body()) < l {
+			l = len(m.Body())
+		}
+		content = string(m.Body()[:l])
+	}
+	return fmt.Sprintf("Message{%v, %v, %v, %v, %v, %s}",
+		idutils.String(m.ID()), idutils.String(m.Sender()), idutils.String(m.Receiver()),
+		m.Type(), timeutils.Time2string(m.SendTime()), content)
 }

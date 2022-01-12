@@ -28,10 +28,16 @@ type ThingMS struct {
 
 func (s *ThingMS) Handle(receiveTime time.Time, msg msgserver.Message) {
 	fmt.Printf("\t%+v\n", msg)
+
+	if idutils.CliId32(msg.Receiver()) == idutils.FullId {
+		s.handleBroadcast(msg, receiveTime)
+		return
+	}
+
 	svrID := idutils.SvrId32(msg.Receiver())
 	if svrID != s.Me && msg.Type() != msgserver.TaskMsg {
-		s.LogStore.Add(msg.ID(), msg.SendTime(), logstore.SenderSended)
-		s.LogStore.Add(msg.ID(), receiveTime, logstore.SenderMsgSvrReceived)
+		s.LogStore.Add(msg.ID(), msg.Sender(), msg.Receiver(), msg.Sender(), msg.SendTime(), logstore.Send)
+		s.LogStore.Add(msg.ID(), msg.Sender(), msg.Receiver(), uint64(s.Me), receiveTime, logstore.Receive)
 
 		svr, err := s.NameServer.GetServer(svrID)
 		if err != nil {
@@ -44,7 +50,7 @@ func (s *ThingMS) Handle(receiveTime time.Time, msg msgserver.Message) {
 			return
 		}
 
-		s.LogStore.Add(msg.ID(), sendTime, logstore.SenderMsgSvrSended)
+		s.LogStore.Add(msg.ID(), msg.Sender(), msg.Receiver(), uint64(s.Me), sendTime, logstore.Send)
 		return
 	}
 
@@ -60,20 +66,51 @@ func (s *ThingMS) Handle(receiveTime time.Time, msg msgserver.Message) {
 	}
 }
 
+func (s *ThingMS) handleBroadcast(msg msgserver.Message, receiveTime time.Time) {
+	s.LogStore.Add(msg.ID(), msg.Sender(), msg.Receiver(), uint64(s.Me), receiveTime, logstore.Receive)
+
+	// 客户端发布广播消息到的首个Message Server
+	if idutils.SvrId32(msg.Receiver()) == idutils.FullId {
+		s.LogStore.Add(msg.ID(), msg.Sender(), msg.Receiver(), msg.Sender(), msg.SendTime(), logstore.Send)
+
+		servers, ids := s.NameServer.GetAllServer()
+		for idx := range servers {
+			newMsg := msg.Clone()
+			go func(idx int) {
+				if ids[idx] == s.Me {
+					return
+				}
+
+				newMsg.SetReceiver(idutils.DeviceId(ids[idx], idutils.FullId))
+				sendTime, err := czmqutils.Send(servers[idx].ZMQEndpoint, newMsg)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+				s.LogStore.Add(newMsg.ID(), newMsg.Sender(), newMsg.Receiver(), uint64(s.Me), sendTime, logstore.Send)
+			}(idx)
+		}
+	}
+
+	sendTime := s.Registry.Broadcast(msg)
+	s.LogStore.Add(msg.ID(), msg.Sender(), msg.Receiver(), uint64(s.Me), sendTime, logstore.Send)
+}
+
 func (s *ThingMS) handleText(msg msgserver.Message, receiveTime time.Time) {
-	cliID := idutils.CliId32(msg.Receiver())
-	cli, err := s.Registry.GetClient(cliID)
+	s.LogStore.Add(msg.ID(), msg.Sender(), msg.Receiver(), uint64(s.Me), receiveTime, logstore.Receive)
+
+	sendTime, err := s.Registry.Send(msg)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	cli.WsClient.Send <- msg
-	s.LogStore.Add(msg.ID(), receiveTime, logstore.ReceiverMsgSvrReceived)
+
+	s.LogStore.Add(msg.ID(), msg.Sender(), msg.Receiver(), uint64(s.Me), sendTime, logstore.Send)
 }
 
 func (s *ThingMS) handleTask(msg msgserver.Message, receiveTime time.Time) {
-	s.LogStore.Add(msg.ID(), msg.SendTime(), logstore.SenderSended)
-	s.LogStore.Add(msg.ID(), receiveTime, logstore.SenderMsgSvrReceived)
+	s.LogStore.Add(msg.ID(), msg.Sender(), msg.Receiver(), msg.Sender(), msg.SendTime(), logstore.Send)
+	s.LogStore.Add(msg.ID(), msg.Sender(), msg.Receiver(), uint64(s.Me), receiveTime, logstore.Receive)
 
 	sendTime, err := s.TaskMsgHdl.Handle(msg)
 	if err != nil {
@@ -81,9 +118,9 @@ func (s *ThingMS) handleTask(msg msgserver.Message, receiveTime time.Time) {
 		return
 	}
 
-	s.LogStore.Add(msg.ID(), sendTime, logstore.SenderMsgSvrSended)
+	s.LogStore.Add(msg.ID(), msg.Sender(), msg.Receiver(), uint64(s.Me), sendTime, logstore.Send)
 }
 
 func (s *ThingMS) handleLog(msg msgserver.Message, receiveTime time.Time) {
-	s.LogStore.Add(msg.ID(), msg.SendTime(), logstore.ReceiverReceived)
+	s.LogStore.Add(msg.ID(), msg.Sender(), msg.Receiver(), msg.Sender(), msg.SendTime(), logstore.Receive)
 }

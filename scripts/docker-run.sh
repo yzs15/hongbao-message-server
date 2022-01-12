@@ -45,6 +45,7 @@ docker run -it \
     -ws   0.0.0.0:5554 \
     -zmq  tcp://0.0.0.0:5553 \
     -log  0.0.0.0:5552 \
+    -log-path /hongbao-ms \
     -nsend $NSEND \
     -zmq-out $ZMQ_OUT \
     -$ENV $KENDS

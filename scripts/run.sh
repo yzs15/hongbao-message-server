@@ -28,6 +28,7 @@ go run cmd/msd/*.go \
     -ws    0.0.0.0:5554 \
     -zmq   tcp://0.0.0.0:5553 \
     -log   0.0.0.0:5552 \
+    -log-path $PWD \
     -nsend $NSEND \
     -zmq-out $ZMQ_OUT \
     -$ENV  $KENDS

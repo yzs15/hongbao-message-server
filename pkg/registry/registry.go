@@ -2,6 +2,11 @@ package registry
 
 import (
 	"sync"
+	"time"
+
+	"ict.ac.cn/hbmsgserver/pkg/idutils"
+
+	"ict.ac.cn/hbmsgserver/pkg/msgserver"
 
 	"github.com/pkg/errors"
 
@@ -22,13 +27,16 @@ type Registry struct {
 	idGenerator chan uint32
 
 	mu sync.Mutex
+
+	hub *wshub.Hub
 }
 
-func NewRegistry() *Registry {
+func NewRegistry(hub *wshub.Hub) *Registry {
 	return &Registry{
 		mac2id:      make(map[string]uint32),
 		id2client:   make(map[uint32]*Client),
 		idGenerator: make(chan uint32, 1000),
+		hub:         hub,
 	}
 }
 
@@ -67,4 +75,21 @@ func (r *Registry) GetClient(id uint32) (*Client, error) {
 	}
 
 	return cli, nil
+}
+
+func (r *Registry) Broadcast(msg msgserver.Message) time.Time {
+	sendTime := time.Now()
+	r.hub.Broadcast <- msg
+	return sendTime
+}
+
+func (r *Registry) Send(msg msgserver.Message) (time.Time, error) {
+	cliID := idutils.CliId32(msg.Receiver())
+	cli, err := r.GetClient(cliID)
+	if err != nil {
+		return time.Time{}, err
+	}
+	sendTime := time.Now()
+	cli.WsClient.Send <- msg
+	return sendTime, nil
 }

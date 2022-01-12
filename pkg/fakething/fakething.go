@@ -1,6 +1,9 @@
 package fakething
 
 import (
+	"bytes"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"sync"
@@ -20,7 +23,7 @@ const reqWindow = 10 * time.Millisecond
 
 type Mode string
 
-var wangID = idutils.CompleteId(1, 1)
+var wangID = idutils.DeviceId(1, 2)
 
 const (
 	Cycle   Mode = "cycle"   // 周期发送
@@ -48,10 +51,35 @@ type Thing struct {
 	TotalTime time.Duration
 	PeakTime  time.Duration
 	PeakNum   int
+
+	mid chan uint32
 }
 
 func (c *Thing) Run() {
+	go func() {
+		c.mid = make(chan uint32, 10000)
+		var id uint32
+		for id = 1; ; id++ {
+			c.mid <- id
+		}
+	}()
+
 	c.Me = c.waitID()
+
+	jpgRaw, err := ioutil.ReadFile("test.jpg")
+	if err != nil {
+		panic(err)
+	}
+
+	buf := new(bytes.Buffer)
+	buf.WriteByte(^uint8(0))
+	buf.Write(jpgRaw)
+	msg := msgserver.NewMessage(1, c.Me, wangID, msgserver.TextMsg, buf.Bytes())
+	msg.SetSendTime()
+	fmt.Println("send a jpg message")
+	if _, err := czmqutils.Send(c.MsgZmqEnd, msg); err != nil {
+		log.Println("czmq send failed: ", err)
+	}
 
 	var connDis []int
 	var connSum int
@@ -98,8 +126,8 @@ func (c *Thing) concurrentReq(num int) {
 		for ri := 0; ri < curNum; ri++ {
 			go func() {
 				task := c.Tasks[rand.Intn(len(c.Tasks))].Clone()
-				msg := msgserver.NewMessage(uint64(time.Now().UnixNano()), c.Me, wangID,
-					msgserver.TaskMsg, task.ToBytes())
+				msg := msgserver.NewMessage(idutils.MessageID(idutils.SvrId32(c.Me), idutils.CliId32(c.Me), <-c.mid),
+					c.Me, wangID, msgserver.TaskMsg, task.ToBytes())
 
 				msg.SetSendTime()
 				if _, err := czmqutils.Send(c.MsgZmqEnd, msg); err != nil {

@@ -45,6 +45,16 @@ func (r *NameServer) GetServer(id uint32) (*MsgSvr, error) {
 	return svr, nil
 }
 
+func (r *NameServer) GetAllServer() ([]*MsgSvr, []uint32) {
+	servers := make([]*MsgSvr, 0)
+	ids := make([]uint32, 0)
+	for k, v := range r.id2server {
+		servers = append(servers, v)
+		ids = append(ids, k)
+	}
+	return servers, ids
+}
+
 func getHttpCli() *http.Client {
 	cli := &http.Client{
 		Transport: &http.Transport{

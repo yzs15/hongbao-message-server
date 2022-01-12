@@ -36,7 +36,6 @@ func Send(endpoint string, data msgserver.Message) (time.Time, error) {
 		return time.Time{}, err
 	}
 
-	data.SetSendTime()
 	if err := sock.SendFrame(data, goczmq.FlagNone); err != nil {
 		return time.Time{}, errors.Wrap(err, "zmq push sock send frame failed")
 	}

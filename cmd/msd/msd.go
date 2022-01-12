@@ -46,6 +46,8 @@ var kubeEnds StringArrFlag
 var nsEnd = flag.String("nsend", "", "name server endpoint")
 var zmqOutEnd = flag.String("zmq-out", "", "zmq remote connection endpoint")
 
+var logPath = flag.String("log-path", ".", "the directory to save log file")
+
 func main() {
 	flag.Var(&kubeEnds, "kend", "kubernetes' http endpoint")
 	flag.Parse()
@@ -58,20 +60,20 @@ func main() {
 
 	ns := nameserver.NewNameServer(*nsEnd, me)
 
-	logStore := logstore.NewLogStore(me)
+	logStore := logstore.NewLogStore(me, *logPath)
 	go logStore.Run()
 
 	wsHub := wshub.NewHub()
 	go wsHub.Run()
 
-	reg := registry.NewRegistry()
+	reg := registry.NewRegistry(wsHub)
 	go reg.Run()
 
 	var taskMsgHdl thingms.TaskMsgHandler
 	if *isNet {
 		fmt.Println("run in internet")
 		svs := buildNetSvs()
-		taskMsgHdl = thingms.NewNetThingMsgHandler(kubeEnds, svs, ns)
+		taskMsgHdl = thingms.NewNetThingMsgHandler(me, kubeEnds, svs, reg, ns, logStore)
 	} else if *isSpb {
 		fmt.Println("run in superbahn")
 		taskMsgHdl = thingms.NewSpbThingMsgHandler(*spbConfig)

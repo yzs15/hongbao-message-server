@@ -1,6 +1,7 @@
 package fakething
 
 import (
+	"fmt"
 	"net/url"
 
 	"ict.ac.cn/hbmsgserver/pkg/msgserver"
@@ -20,6 +21,7 @@ func (t *Thing) waitID() uint64 {
 	}
 	defer c.Close()
 
+	// Wait For ID
 	_, msgRaw, err := c.ReadMessage()
 	if err != nil {
 		panic(err)
@@ -29,7 +31,19 @@ func (t *Thing) waitID() uint64 {
 	if msg.Type() != msgserver.NameMsg {
 		panic("don't receive the NameMsg")
 	}
-	return msg.Receiver()
+
+	// Wait For Start
+	_, msgRaw, err = c.ReadMessage()
+	if err != nil {
+		panic(err)
+	}
+	msg = msgRaw
+
+	if msg.Type() != msgserver.TextMsg {
+		panic("don't receive the NameMsg")
+	}
+
+	fmt.Printf("%s\n", msg.Body())
 
 	//receiveTime := time.Now()
 	//go func() {
@@ -43,4 +57,6 @@ func (t *Thing) waitID() uint64 {
 	//		log.Fatal(err)
 	//	}
 	//}()
+
+	return msg.Receiver()
 }
