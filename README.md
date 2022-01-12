@@ -35,3 +35,15 @@ Run as one thing in superbahn
 ```bash
 go run cmd/msd/msd.go -thing -spb
 ```
+
+# Log Server
+
+可通过指定多个 -f 参数，来指定多个 log 文件
+
+```text
+Usage of ./bin/logserverd:
+  -addr string
+        log service address (default "0.0.0.0:5552")
+  -f value
+        the path to log file
+```
