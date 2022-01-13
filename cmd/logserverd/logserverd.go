@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -25,7 +24,7 @@ var Addr = flag.String("addr", "0.0.0.0:5552", "log service address")
 var logFilenames StringArrFlag
 
 func main() {
-	flag.Var(&logFilenames, "f", "the path to log file")
+	flag.Var(&logFilenames, "f", "the path to log file, if directory, read all files")
 	flag.Parse()
 
 	if len(logFilenames) == 0 {
@@ -46,19 +45,47 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		logBuf := new(bytes.Buffer)
 		for _, logFilename := range logFilenames {
-			log, err := ioutil.ReadFile(logFilename)
-			if err != nil {
-				fmt.Printf("read log file failed: %s\n", logFilename)
-				continue
+			if stat, _ := os.Stat(logFilename); stat.IsDir() {
+				files, err := ioutil.ReadDir(logFilename)
+				if err != nil {
+					fmt.Printf("read log dir failed: %s", logFilename)
+					continue
+				}
+
+				for _, file := range files {
+					if file.IsDir() {
+						continue
+					}
+					completePath := fmt.Sprintf("%s/%s", logFilename, file.Name())
+
+					log, err := ioutil.ReadFile(completePath)
+					if err != nil {
+						fmt.Printf("read log file failed: %s\n", completePath)
+						continue
+					}
+
+					if len(log) > 0 {
+						w.Write(log)
+						w.Write([]byte("\n"))
+					}
+				}
+
+			} else {
+				log, err := ioutil.ReadFile(logFilename)
+				if err != nil {
+					fmt.Printf("read log file failed: %s\n", logFilename)
+					continue
+				}
+
+				if len(log) > 0 {
+					w.Write(log)
+					w.Write([]byte("\n"))
+				}
 			}
-			logBuf.Write(log)
-			logBuf.WriteByte('\n')
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write(logBuf.Bytes())
 	})
 
 	fmt.Printf("log server listen at: %s\n", *Addr)
