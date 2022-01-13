@@ -33,6 +33,12 @@ var upgrader = websocket.Upgrader{
 
 // serveWs handles websocket requests from the peer.
 func (s *WebSocketServer) ServeWs(w http.ResponseWriter, r *http.Request) {
+	if !r.URL.Query().Has("mac") {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("no mac addr in uri"))
+		return
+	}
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
@@ -46,7 +52,7 @@ func (s *WebSocketServer) ServeWs(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 		cli := &registry.Client{
-			Mac:      r.URL.Query()["mac"][0],
+			Mac:      r.URL.Query().Get("mac"),
 			Location: "",
 			WsClient: client,
 		}

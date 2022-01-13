@@ -1,13 +1,12 @@
 package fakething
 
 import (
-	"bytes"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
 
 	"ict.ac.cn/hbmsgserver/pkg/idutils"
 
@@ -53,6 +52,8 @@ type Thing struct {
 	PeakNum   int
 
 	mid chan uint32
+
+	wsConn *websocket.Conn
 }
 
 func (c *Thing) Run() {
@@ -65,21 +66,22 @@ func (c *Thing) Run() {
 	}()
 
 	c.Me = c.waitID()
+	c.waitNextMessage(msgserver.TextMsg)
 
-	jpgRaw, err := ioutil.ReadFile("test.jpg")
-	if err != nil {
-		panic(err)
-	}
-
-	buf := new(bytes.Buffer)
-	buf.WriteByte(^uint8(0))
-	buf.Write(jpgRaw)
-	msg := msgserver.NewMessage(1, c.Me, wangID, msgserver.TextMsg, buf.Bytes())
-	msg.SetSendTime()
-	fmt.Println("send a jpg message")
-	if _, err := czmqutils.Send(c.MsgZmqEnd, msg); err != nil {
-		log.Println("czmq send failed: ", err)
-	}
+	//jpgRaw, err := ioutil.ReadFile("test.jpg")
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//buf := new(bytes.Buffer)
+	//buf.WriteByte(^uint8(0))
+	//buf.Write(jpgRaw)
+	//msg := msgserver.NewMessage(1, c.Me, wangID, msgserver.TextMsg, buf.Bytes())
+	//msg.SetSendTime()
+	//fmt.Println("send a jpg message")
+	//if _, err := czmqutils.Send(c.MsgZmqEnd, msg); err != nil {
+	//	log.Println("czmq send failed: ", err)
+	//}
 
 	var connDis []int
 	var connSum int
@@ -108,6 +110,10 @@ func (c *Thing) Run() {
 		timeutils.SleepUtil(nextTime)
 	}
 	wg.Wait()
+
+	msg := c.waitNextMessage(msgserver.TextMsg)
+	timeutils.SleepUtil(msg.SendTime().Add(50 * time.Millisecond))
+	c.concurrentReq(1)
 }
 
 func (c *Thing) concurrentReq(num int) {

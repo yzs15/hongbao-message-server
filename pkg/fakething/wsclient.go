@@ -19,7 +19,7 @@ func (t *Thing) waitID() uint64 {
 	if err != nil {
 		panic(err)
 	}
-	defer c.Close()
+	t.wsConn = c
 
 	// Wait For ID
 	_, msgRaw, err := c.ReadMessage()
@@ -32,31 +32,20 @@ func (t *Thing) waitID() uint64 {
 		panic("don't receive the NameMsg")
 	}
 
-	// Wait For Start
-	_, msgRaw, err = c.ReadMessage()
+	return msg.Receiver()
+}
+
+func (t *Thing) waitNextMessage(typ msgserver.MessageType) msgserver.Message {
+	_, msgRaw, err := t.wsConn.ReadMessage()
 	if err != nil {
 		panic(err)
 	}
-	msg = msgRaw
+	msg := msgserver.Message(msgRaw)
 
-	if msg.Type() != msgserver.TextMsg {
-		panic("don't receive the NameMsg")
+	if msg.Type() != typ {
+		panic(fmt.Sprintf("don't receive the %d", typ))
 	}
 
 	fmt.Printf("%s\n", msg.Body())
-
-	//receiveTime := time.Now()
-	//go func() {
-	//	log.Printf("[%s] recv: %s", timeutils.Time2string(receiveTime), string(msgRaw))
-	//
-	//	myID := msg.Receiver()
-	//	svrID := idutils.SvrId32(myID)
-	//	sendMsg := msgserver.NewMessage(msg.ID(), myID, uint64(svrID),
-	//		msgserver.LogMsg, nil)
-	//	if _, err := czmqutils.Send(t.MsgZmqEnd, sendMsg); err != nil {
-	//		log.Fatal(err)
-	//	}
-	//}()
-
-	return msg.Receiver()
+	return msg
 }

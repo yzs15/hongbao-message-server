@@ -40,7 +40,7 @@ fi
 START=$prefix$nxt_min:00
 
 go run cmd/thingcli/thingcli.go -start "$START" \
-    -duration 30m \
+    -duration 30s \
     -ws   $MS_WS_END \
     -zmq  $MS_ZMQ_END \
     -mac  $MAC_ADDR

@@ -72,12 +72,12 @@ func NewNetThingMsgHandler(
 func (h *netThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 	task := ParseTask(msg.Body())
 
-	result, err, reqTime, respTime := h.httpReq(task.ServiceID, task.Args)
+	result, err, reqTime, respTime := h.httpReq(msg.ID(), task.ServiceID, task.Args)
 	if err != nil {
 		return time.Time{}, err
 	}
-	h.logStore.Add(msg.ID(), uint64(h.Me), idutils.DeviceId(h.Me, 1<<19), uint64(h.Me), reqTime, "send")
-	h.logStore.Add(msg.ID(), uint64(h.Me), idutils.DeviceId(h.Me, 1<<19), uint64(h.Me), respTime, "recv")
+	h.logStore.Add(msg.ID(), uint64(h.Me), idutils.DeviceId(h.Me, 1<<19), uint64(h.Me), reqTime, logstore.Send)
+	h.logStore.Add(msg.ID(), uint64(h.Me), idutils.DeviceId(h.Me, 1<<19), uint64(h.Me), respTime, logstore.Receive)
 
 	resMsg := msgserver.NewMessage(msg.ID(), msg.Sender(), msg.Receiver(),
 		msgserver.TextMsg, result)
@@ -103,10 +103,10 @@ func (h *netThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 	return sendTime, nil
 }
 
-func (h *netThingMsgHandler) httpReq(svcId uint8, args []byte) (result []byte, err error, reqTime, respTime time.Time) {
+func (h *netThingMsgHandler) httpReq(mid uint64, svcId uint8, args []byte) (result []byte, err error, reqTime, respTime time.Time) {
 	service := h.Services[svcId]
 
-	path := service.Path(args)
+	path := service.Path(mid, args)
 	body, contentType := service.Body(args)
 	endpoint := h.KubeEndpoints[rand.Intn(len(h.KubeEndpoints))]
 	url := fmt.Sprintf("http://%s:%s%s", endpoint, service.Port, path)

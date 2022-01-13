@@ -60,7 +60,7 @@ func main() {
 
 	ns := nameserver.NewNameServer(*nsEnd, me)
 
-	logStore := logstore.NewLogStore(me, *logPath)
+	logStore := logstore.NewLogStore(fmt.Sprintf("%s/%d.log", *logPath, me))
 	go logStore.Run()
 
 	wsHub := wshub.NewHub()
@@ -110,11 +110,12 @@ func buildNetSvs() map[uint8]*thingms.NetService {
 	fibSvs := &thingms.NetService{
 		Method: "GET",
 		Port:   "32101",
-		Path: func(args []byte) string {
+		Path: func(mid uint64, args []byte) string {
+			prefix := thingms.NilPath(mid, args)
 			if len(args) > 0 {
-				return fmt.Sprintf("/?num=%s", args)
+				return fmt.Sprintf("%s&num=%s", prefix, args)
 			}
-			return "/"
+			return prefix
 		},
 		Body: thingms.NilBody,
 	}
@@ -147,12 +148,13 @@ func buildNetSvs() map[uint8]*thingms.NetService {
 	hongbaoSvs := &thingms.NetService{
 		Port:   "32107",
 		Method: "POST",
-		Path: func(args []byte) string {
+		Path: func(mid uint64, args []byte) string {
+			prefix := thingms.NilPath(mid, args)
 			l := binary.LittleEndian.Uint32(args[:4])
 			if len(args) > 0 {
-				return fmt.Sprintf("/?msg=%s", args[4:4+l])
+				return fmt.Sprintf("%s&msg=%s", prefix, args[4:4+l])
 			}
-			return "/"
+			return prefix
 		},
 		Body: func(args []byte) (io.Reader, string) {
 			l := binary.LittleEndian.Uint32(args[:4])
