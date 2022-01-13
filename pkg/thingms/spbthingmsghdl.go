@@ -118,7 +118,8 @@ type spbThingMsgHandler struct {
 	Worker_id        uint64
 	Send_task        *goczmq.Sock
 	With_body        bool
-	Task_config_file string
+	Task_path        string
+	Task_config_file []string
 }
 
 func NewSpbThingMsgHandler(spbConfig string) TaskMsgHandler {
@@ -135,31 +136,43 @@ func NewSpbThingMsgHandler(spbConfig string) TaskMsgHandler {
 	send_task, _ := goczmq.NewReq(client_config.Task_send_endpoint)
 
 	worker_id := commit_worker(send_worker, client_config.Worker_path+client_config.Worker_filename, client_config.Worker_priority)
-	task_config_file := client_config.Task_path + client_config.Task_config_list[0]
 
 	return &spbThingMsgHandler{
 		Worker_id:        worker_id,
 		Send_task:        send_task,
 		With_body:        true,
-		Task_config_file: task_config_file,
+		Task_path:        client_config.Task_path,
+		Task_config_file: client_config.Task_config_list,
 	}
 }
 
 func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 	task := ParseTask(msg.Body())
-
 	worker_id := h.Worker_id
 	send_task := h.Send_task
-	task_config_file, err := ioutil.ReadFile(h.Task_config_file)
+
+	var task_config_path string
+	var with_body bool
+	if task.ServiceID == 1 {
+		task_config_path = h.Task_path + h.Task_config_file[0]
+		with_body = h.With_body
+	} else if task.ServiceID == 7 {
+		task_config_path = h.Task_path + h.Task_config_file[1]
+		with_body = true
+	} else {
+		fmt.Println("[C] Can't find Service ID ", task.ServiceID)
+	}
+	task_config_file, err := ioutil.ReadFile(task_config_path)
 	if err != nil {
 		fmt.Println("[C] Open Task Config File Error", err)
 	}
 	var task_config TaskConfig
 	json.Unmarshal(task_config_file, &task_config)
 
+	// construct task body
 	var task_file_size int64
 	var task_buf []byte
-	if h.With_body {
+	if with_body {
 		task_file, err := os.Open(task_config.Body_file)
 		if err != nil {
 			fmt.Println("[C] Open Task File Error")
@@ -181,7 +194,7 @@ func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 	task_info.Worker_id = worker_id
 	task_info.Priority = task_config.Priority
 	task_info.Timestamp = uint64(C.my_GetTime())
-	if h.With_body {
+	if with_body {
 		task_info.Task_body_size = uint64(task_file_size)
 	} else {
 		task_info.Task_body_size = uint64(0)
@@ -198,10 +211,17 @@ func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 
 	task_header := task_info.Info2Header()
 	Send(send_task, task_header, goczmq.FlagMore)
-	if h.With_body {
+	if task.ServiceID == 1 {
+		if h.With_body {
+			Send(send_task, task_buf, goczmq.FlagMore)
+			h.With_body = false
+		}
+	} else if task.ServiceID == 7 {
 		Send(send_task, task_buf, goczmq.FlagMore)
-		h.With_body = false
+	} else {
+		fmt.Println("[C] Can't find Service ID ", task.ServiceID)
 	}
+
 	Send(send_task, task.Args, goczmq.FlagNone)
 
 	send_ok_msg := Recv(send_task)
