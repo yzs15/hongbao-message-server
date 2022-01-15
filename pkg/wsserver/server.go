@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"ict.ac.cn/hbmsgserver/pkg/idutils"
@@ -56,7 +57,13 @@ func (s *WebSocketServer) ServeWs(w http.ResponseWriter, r *http.Request) {
 			Location: "",
 			WsClient: client,
 		}
-		cid := s.Registry.Register(cli)
+
+		expId := -1
+		if r.URL.Query().Has("expid") {
+			expId, _ = strconv.Atoi(r.URL.Query().Get("expid"))
+		}
+
+		cid := s.Registry.Register(cli, uint32(expId))
 
 		msg := msgserver.NewMessage(uint64(time.Now().UnixNano()), uint64(s.Me), idutils.DeviceId(s.Me, cid),
 			msgserver.NameMsg, []byte(cli.Mac))

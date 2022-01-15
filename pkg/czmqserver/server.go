@@ -19,13 +19,11 @@ type CZMQServer struct {
 }
 
 func (s *CZMQServer) Run() {
-	pullSock := goczmq.NewSock(goczmq.Pull)
-	defer pullSock.Destroy()
-
-	_, err := pullSock.Bind(s.Addr)
+	pullSock, err := goczmq.NewPull(s.Addr)
 	if err != nil {
 		panic(err)
 	}
+	defer pullSock.Destroy()
 	fmt.Printf("zmq server listen at: %s\n", s.Addr)
 
 	for {

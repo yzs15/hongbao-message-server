@@ -22,12 +22,14 @@ if [ "net" = $ENV ]; then
     MAC_ADDR=02:42:ac:12:00:01
   fi
 else
-  MS_WS_END=58.213.121.2:10022
-  MS_ZMQ_END=tcp://58.213.121.2:10025
   if [ "bj" = $LOC ]; then
     MAC_ADDR=02:42:ac:12:00:02
+    MS_WS_END=192.168.143.3:8082
+    MS_ZMQ_END=tcp://192.168.143.3:8081
   else
     MAC_ADDR=02:42:ac:12:00:03
+    MS_WS_END=192.168.143.5:8082
+    MS_ZMQ_END=tcp://192.168.143.5:8081
   fi
 fi
 

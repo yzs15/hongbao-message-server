@@ -25,9 +25,18 @@ if [ "net" = $ENV ]; then
     MAC="02:42:ac:11:00:02"
   fi
 else
-  ZMQ_PORT=5558
-  WS_PORT=8080
+  ZMQ_PORT=8081
+  WS_PORT=8082
   KENDS=""
+  if [ "bj" = $LOC ]; then
+    NSEND="58.213.121.2:10027"
+    ZMQ_OUT="tcp://192.168.143.3:8081"
+    MAC="02:42:ac:11:00:01"
+  else
+    NSEND="58.213.121.2:10027"
+    ZMQ_OUT="tcp://192.168.143.5:8081"
+    MAC="02:42:ac:11:00:02"
+  fi
 fi
 
 docker pull registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:msd
@@ -39,6 +48,7 @@ docker run -it \
   -p $WS_PORT:5554 \
   -p $ZMQ_PORT:5553 \
   -p 5552:5552 \
+  -v /root/projects/hongbao-ms:/hongbao-ms \
   --mac-address $MAC \
   registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:msd \
   msd \

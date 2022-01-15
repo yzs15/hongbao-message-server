@@ -2,7 +2,10 @@ package thingms
 
 import (
 	"fmt"
+	"log"
 	"time"
+
+	"gopkg.in/zeromq/goczmq.v4"
 
 	"ict.ac.cn/hbmsgserver/pkg/nameserver"
 
@@ -44,8 +47,16 @@ func (s *ThingMS) Handle(receiveTime time.Time, msg msgserver.Message) {
 			fmt.Println(err)
 			return
 		}
+
+		sockItem, err := czmqutils.GetSock(svr.ZMQEndpoint, goczmq.Push)
+		if err != nil {
+			log.Println("czmq get sock failed: ", err)
+			return
+		}
+		defer sockItem.Free()
+
 		var sendTime time.Time
-		if sendTime, err = czmqutils.Send(svr.ZMQEndpoint, msg); err != nil {
+		if sendTime, err = czmqutils.Send(sockItem, msg, goczmq.FlagNone); err != nil {
 			fmt.Println(err)
 			return
 		}
@@ -80,9 +91,16 @@ func (s *ThingMS) handleBroadcast(msg msgserver.Message, receiveTime time.Time) 
 				if ids[idx] == s.Me {
 					return
 				}
-
 				newMsg.SetReceiver(idutils.DeviceId(ids[idx], idutils.FullId))
-				sendTime, err := czmqutils.Send(servers[idx].ZMQEndpoint, newMsg)
+
+				sockItem, err := czmqutils.GetSock(servers[idx].ZMQEndpoint, goczmq.Push)
+				if err != nil {
+					log.Println("czmq get sock failed: ", err)
+					return
+				}
+				defer sockItem.Free()
+
+				sendTime, err := czmqutils.Send(sockItem, newMsg, goczmq.FlagNone)
 				if err != nil {
 					fmt.Println(err)
 					return

@@ -3,10 +3,13 @@ package thingms
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"net"
 	"net/http"
 	"time"
+
+	"gopkg.in/zeromq/goczmq.v4"
 
 	"ict.ac.cn/hbmsgserver/pkg/registry"
 
@@ -95,7 +98,15 @@ func (h *netThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 		if err != nil {
 			return time.Time{}, err
 		}
-		if sendTime, err = czmqutils.Send(svr.ZMQEndpoint, resMsg); err != nil {
+
+		sockItem, err := czmqutils.GetSock(svr.ZMQEndpoint, goczmq.Push)
+		if err != nil {
+			log.Println("czmq get sock failed: ", err)
+			return time.Time{}, err
+		}
+		defer sockItem.Free()
+
+		if sendTime, err = czmqutils.Send(sockItem, resMsg, goczmq.FlagNone); err != nil {
 			return time.Time{}, err
 		}
 	}

@@ -16,9 +16,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"os"
 	"time"
+
+	"ict.ac.cn/hbmsgserver/pkg/czmqutils"
 
 	"ict.ac.cn/hbmsgserver/pkg/msgserver"
 
@@ -28,7 +31,7 @@ import (
 func Send(sock *goczmq.Sock, data []byte, flag int) {
 	err := sock.SendFrame(data, flag)
 	for err != nil {
-		fmt.Println("!!! SafeSendFrame ERROR", err)
+		//fmt.Println("!!! SafeSendFrame ERROR", err)
 		err = sock.SendFrame(data, flag)
 	}
 }
@@ -115,11 +118,11 @@ func commit_worker(send_worker *goczmq.Sock, worker string, priority uint32) uin
 }
 
 type spbThingMsgHandler struct {
-	Worker_id        uint64
-	Send_task        *goczmq.Sock
-	With_body        bool
-	Task_path        string
-	Task_config_file []string
+	Worker_id          uint64
+	Task_send_endpoint string
+	With_body          bool
+	Task_path          string
+	Task_config_file   []string
 }
 
 func NewSpbThingMsgHandler(spbConfig string) TaskMsgHandler {
@@ -133,23 +136,23 @@ func NewSpbThingMsgHandler(spbConfig string) TaskMsgHandler {
 
 	send_worker, err := goczmq.NewReq(client_config.Worker_send_endpoint)
 	defer send_worker.Destroy()
-	send_task, _ := goczmq.NewReq(client_config.Task_send_endpoint)
+	//send_task, _ := goczmq.NewReq(client_config.Task_send_endpoint)
 
 	worker_id := commit_worker(send_worker, client_config.Worker_path+client_config.Worker_filename, client_config.Worker_priority)
 
 	return &spbThingMsgHandler{
-		Worker_id:        worker_id,
-		Send_task:        send_task,
-		With_body:        true,
-		Task_path:        client_config.Task_path,
-		Task_config_file: client_config.Task_config_list,
+		Worker_id:          worker_id,
+		Task_send_endpoint: client_config.Task_send_endpoint,
+		With_body:          true,
+		Task_path:          client_config.Task_path,
+		Task_config_file:   client_config.Task_config_list,
 	}
 }
 
 func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 	task := ParseTask(msg.Body())
 	worker_id := h.Worker_id
-	send_task := h.Send_task
+	//send_task := h.Send_task
 
 	var task_config_path string
 	var with_body bool
@@ -199,7 +202,7 @@ func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 	} else {
 		task_info.Task_body_size = uint64(0)
 	}
-	task_info.Task_args_size = uint64(len(task.Args))
+	task_info.Task_args_size = uint64(len(task.Args) + 8)
 	task_info.Task_QoS.End_before = task_info.Timestamp + task_config.End_before
 	task_info.Task_QoS.Estimate_running_time = task_config.Estimate_running_time
 	task_info.Task_body_constraint.Cpu = task_config.Cpu
@@ -209,22 +212,38 @@ func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 	task_info.Estimate_result_size = task_config.Estimate_result_size
 	task_info.Estimate_call_time = task_config.Estimate_call_time
 
+	sockItem, err := czmqutils.GetSock(h.Task_send_endpoint, goczmq.Req)
+	if err != nil {
+		log.Println("czmq get sock failed: ", err)
+		return time.Time{}, nil
+	}
+	defer sockItem.Free()
+
 	task_header := task_info.Info2Header()
-	Send(send_task, task_header, goczmq.FlagMore)
+
+	czmqutils.Send(sockItem, task_header, goczmq.FlagMore)
+	//Send(send_task, task_header, goczmq.FlagMore)
 	if task.ServiceID == 1 {
 		if h.With_body {
-			Send(send_task, task_buf, goczmq.FlagMore)
+			czmqutils.Send(sockItem, task_buf, goczmq.FlagMore)
+			//Send(send_task, task_buf, goczmq.FlagMore)
 			h.With_body = false
 		}
 	} else if task.ServiceID == 7 {
-		Send(send_task, task_buf, goczmq.FlagMore)
+		czmqutils.Send(sockItem, task_buf, goczmq.FlagMore)
+		//Send(send_task, task_buf, goczmq.FlagMore)
 	} else {
 		fmt.Println("[C] Can't find Service ID ", task.ServiceID)
 	}
 
-	Send(send_task, task.Args, goczmq.FlagNone)
+	args := make([]byte, 8+len(task.Args))
+	binary.LittleEndian.PutUint64(args[:8], msg.Receiver())
+	copy(args[8:], task.Args)
 
-	send_ok_msg := Recv(send_task)
+	czmqutils.Send(sockItem, args, goczmq.FlagNone)
+	//Send(send_task, task.Args, goczmq.FlagNone)
+
+	send_ok_msg := Recv(sockItem.Sock)
 	fmt.Println("[C] User Task Sent", string(send_ok_msg[0]))
 	return time.Time{}, nil
 }

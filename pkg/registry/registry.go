@@ -42,26 +42,36 @@ func NewRegistry(hub *wshub.Hub) *Registry {
 
 func (r *Registry) Run() {
 	var i uint32
-	for i = 1; i < ^(uint32(0)); i++ {
+	for i = 4; i < ^(uint32(0)); i++ {
 		r.idGenerator <- i
 	}
 }
 
-func (r *Registry) Register(c *Client) uint32 {
-	mac := c.Mac
-
+func (r *Registry) Register(c *Client, expId uint32) uint32 {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	var id uint32
-	var ok bool
-	if id, ok = r.mac2id[mac]; !ok {
-		id = <-r.idGenerator
-		r.mac2id[mac] = id
-	}
-	r.id2client[id] = c
+	var finalId uint32 = -1
+	mac := c.Mac
+	if id, ok := r.mac2id[mac]; ok {
+		finalId = id
 
-	return id
+	} else if _, ok := r.id2client[expId]; expId > 0 && !ok {
+		finalId = expId
+
+	} else {
+		for id := range r.idGenerator {
+			if _, ok := r.id2client[id]; ok {
+				continue
+			}
+			finalId = id
+		}
+	}
+
+	r.mac2id[mac] = finalId
+	r.id2client[finalId] = c
+
+	return finalId
 }
 
 func (r *Registry) GetClient(id uint32) (*Client, error) {

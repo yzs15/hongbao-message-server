@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"gopkg.in/zeromq/goczmq.v4"
+
 	"github.com/gorilla/websocket"
 
 	"ict.ac.cn/hbmsgserver/pkg/idutils"
@@ -66,22 +68,8 @@ func (c *Thing) Run() {
 	}()
 
 	c.Me = c.waitID()
-	c.waitNextMessage(msgserver.TextMsg)
-
-	//jpgRaw, err := ioutil.ReadFile("test.jpg")
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//buf := new(bytes.Buffer)
-	//buf.WriteByte(^uint8(0))
-	//buf.Write(jpgRaw)
-	//msg := msgserver.NewMessage(1, c.Me, wangID, msgserver.TextMsg, buf.Bytes())
-	//msg.SetSendTime()
-	//fmt.Println("send a jpg message")
-	//if _, err := czmqutils.Send(c.MsgZmqEnd, msg); err != nil {
-	//	log.Println("czmq send failed: ", err)
-	//}
+	msg := c.waitNextMessage(msgserver.TextMsg)
+	wangID = msg.Sender()
 
 	var connDis []int
 	var connSum int
@@ -111,8 +99,8 @@ func (c *Thing) Run() {
 	}
 	wg.Wait()
 
-	msg := c.waitNextMessage(msgserver.TextMsg)
-	timeutils.SleepUtil(msg.SendTime().Add(50 * time.Millisecond))
+	msg = c.waitNextMessage(msgserver.TextMsg)
+	timeutils.SleepUtil(msg.SendTime().Add(100 * time.Millisecond))
 	c.concurrentReq(1)
 }
 
@@ -131,18 +119,26 @@ func (c *Thing) concurrentReq(num int) {
 
 		for ri := 0; ri < curNum; ri++ {
 			go func() {
+				defer wg.Done()
+
 				task := c.Tasks[rand.Intn(len(c.Tasks))].Clone()
 				msg := msgserver.NewMessage(idutils.MessageID(idutils.SvrId32(c.Me), idutils.CliId32(c.Me), <-c.mid),
 					c.Me, wangID, msgserver.TaskMsg, task.ToBytes())
 
+				sockItem, err := czmqutils.GetSock(c.MsgZmqEnd, goczmq.Push)
+				if err != nil {
+					log.Println("czmq get sock failed: ", err)
+					return
+				}
+				defer sockItem.Free()
+
 				msg.SetSendTime()
-				if _, err := czmqutils.Send(c.MsgZmqEnd, msg); err != nil {
+				if _, err := czmqutils.Send(sockItem, msg, goczmq.FlagNone); err != nil {
 					log.Println("czmq send failed: ", err)
 				}
 				log.Printf("[%s] send a message, size: %d\n",
 					timeutils.Time2string(msg.SendTime()),
 					len(msg))
-				wg.Done()
 			}()
 		}
 		time.Sleep(time.Millisecond)
