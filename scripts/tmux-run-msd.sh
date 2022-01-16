@@ -19,7 +19,7 @@ if [ $? != 0 ]; then
   tmux split-window -t $SESSION_NAME:0
 fi
 
-tmux send-keys -t $SESSION_NAME:0.0 C-c C-c
+tmux send-keys -t $SESSION_NAME:0.0 C-c C-m
 tmux send-keys -t $SESSION_NAME:0.0 "bash $PRO_DIR/scripts/docker-run-msd.sh $ENV $LOC" C-m
 
 mkdir -p /var/log/hongbao
