@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 	"gopkg.in/zeromq/goczmq.v4"
-	"ict.ac.cn/hbmsgserver/pkg/msgserver"
 )
 
 type sockItem struct {
@@ -74,12 +73,13 @@ func GetSock(endpoint string, typ int) (*sockItem, error) {
 	return sock, nil
 }
 
-func Send(item *sockItem, data msgserver.Message, flag int) (time.Time, error) {
+func Send(item *sockItem, data []byte, flag int) (time.Time, error) {
 	sock := item.Sock
 
+	sendTime := time.Now()
 	if err := sock.SendFrame(data, flag); err != nil {
 		return time.Time{}, errors.Wrap(err, "zmq push Sock send frame failed")
 	}
 
-	return data.SendTime(), nil
+	return sendTime, nil
 }
