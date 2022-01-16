@@ -70,9 +70,10 @@ func (c *Thing) Run() {
 		_, msgRaw, err := conn.ReadMessage()
 		if err != nil {
 			fmt.Println("recv msg failed: ", err.Error())
-			continue
+			break
 		}
 		msg := msgserver.Message(msgRaw)
+		fmt.Println(msg.String())
 
 		go func() {
 			// ID Message
@@ -90,8 +91,11 @@ func (c *Thing) Run() {
 			if msg.Body()[0] == Full-1 {
 				c.handleNotice(msg)
 
-			} else {
+			} else if string(msg.Body()) == "开始测试" {
 				c.handleTest(msg, connDis)
+
+			} else {
+				fmt.Println("receive wrong message")
 			}
 		}()
 	}

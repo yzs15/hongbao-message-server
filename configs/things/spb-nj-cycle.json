@@ -1,7 +1,7 @@
 {
   "MacAddr":"",
-  "MsgWsEnd": "172.16.32.16:8082",
-  "MsgZmqEnd": "tcp://172.16.32.16:8081",
+  "MsgWsEnd": "192.168.143.5:8082",
+  "MsgZmqEnd": "tcp://192.168.143.5:8081",
   "Mode":  "cycle",
   "Period":  "1s",
   "NumConn":  0,

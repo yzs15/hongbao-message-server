@@ -65,6 +65,7 @@ func (r *Registry) Register(c *Client, expId uint32) uint32 {
 				continue
 			}
 			finalId = id
+			break
 		}
 	}
 

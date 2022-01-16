@@ -59,8 +59,9 @@ func main() {
 	fmt.Printf("my id is %d\n", me)
 
 	ns := nameserver.NewNameServer(*nsEnd, me)
+	ns.GetServer(2)
 
-	logStore := logstore.NewLogStore(fmt.Sprintf("%s/%d.log", *logPath, me))
+	logStore := logstore.NewLogStore(fmt.Sprintf("%s/msd.log", *logPath))
 	go logStore.Run()
 
 	wsHub := wshub.NewHub()
