@@ -5,65 +5,90 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math/rand"
-	"time"
+
+	"ict.ac.cn/hbmsgserver/pkg/timeutils"
+
+	"ict.ac.cn/hbmsgserver/pkg/linuxutils"
 
 	"ict.ac.cn/hbmsgserver/pkg/thingms"
 
 	"ict.ac.cn/hbmsgserver/pkg/fakething"
 )
 
-var macAddr = flag.String("mac", "02:42:ac:12:00:00", "the fake mac addr for this fake thing")
+var macAddr = flag.String("mac", "", "the fake mac addr for this fake thing")
 
-var wsAddr = flag.String("ws", "172.17.0.1:5544", "http service address")
-var zmqAddr = flag.String("zmq", "tcp://172.17.0.1:5543", "czmq service address")
-
-var start = flag.String("start", "2022-01-26 00:00:00", "the start time(yyyy-MM-dd HH:mm:ss)")
+var wsAddr = flag.String("ws", "", "http service address")
+var zmqAddr = flag.String("zmq", "", "czmq service address")
 
 var modeRaw = flag.String("mode", "cycle", "distribution mode")
-var period = flag.Duration("period", time.Second, "the request period")
+var period timeutils.Duration
 var connNum = flag.Int("conn", 300, "total request num")
-var totalTime = flag.Duration("duration", 3*time.Second, "duration")
-var peakTime = flag.Duration("peak-t", time.Second, "peak time")
+var totalTime timeutils.Duration
+var peakTime timeutils.Duration
 var peakNum = flag.Int("peak-n", 300, "the request num at peak time")
+
+var configFile = flag.String("config", "", "the path to config file, if set, omit other parameters")
 
 //go:embed nums/0.png
 //go:embed nums/1.png
 //go:embed nums/2.png
 //go:embed nums/3.png
+//go:embed nums/4.png
+//go:embed nums/5.png
+//go:embed nums/6.png
+//go:embed nums/7.png
+//go:embed nums/8.png
+//go:embed nums/9.png
 var f embed.FS
 
 func main() {
+	flag.Var(&period, "period", "the request period")
+	flag.Var(&totalTime, "duration", "duration")
+	flag.Var(&peakTime, "peak-t", "peak time")
 	flag.Parse()
 	log.SetFlags(0)
 
-	expected, err := time.Parse("2006-01-02 15:04:05", *start)
-	if err != nil {
-		log.Fatal(err)
+	var conf fakething.Config
+	if len(*configFile) != 0 {
+		var err error
+		conf, err = fakething.GetConfig(*configFile)
+		if err != nil {
+			panic(err)
+		}
+
+	} else {
+		conf = fakething.Config{
+			MacAddr: *macAddr,
+
+			MsgWsEnd:  *wsAddr,
+			MsgZmqEnd: *zmqAddr,
+
+			Mode: fakething.Mode(*modeRaw),
+
+			Period: period,
+
+			NumConn:   *connNum,
+			TotalTime: totalTime,
+			PeakTime:  peakTime,
+			PeakNum:   *peakNum,
+		}
 	}
 
-	fmt.Println("ThingMS WebSocket: ", *wsAddr)
-	fmt.Println("ThingMS CZMQ: ", *zmqAddr)
-	fmt.Println("Start At: ", expected)
+	if len(conf.MacAddr) == 0 {
+		var err error
+		conf.MacAddr, err = linuxutils.GetMac()
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	fmt.Println("My Mac Addr: ", conf.MacAddr)
+	fmt.Println("Msg Server WebSocket: ", conf.MsgWsEnd)
+	fmt.Println("Msg Server CZMQ: ", conf.MsgZmqEnd)
 
 	thing := &fakething.Thing{
-		ID:           rand.Uint32(),
-		MacAddr:      *macAddr,
-		ExpectedTime: expected,
-
-		MsgWsEnd:  *wsAddr,
-		MsgZmqEnd: *zmqAddr,
-
-		Tasks: buildNumrecTasks(),
-
-		Mode: fakething.Mode(*modeRaw),
-
-		Period: *period,
-
-		NumConn:   *connNum,
-		TotalTime: *totalTime,
-		PeakTime:  *peakTime,
-		PeakNum:   *peakNum,
+		Config: conf,
+		Tasks:  buildNumrecTasks(),
 	}
 
 	thing.Run()
@@ -79,7 +104,7 @@ func buildFibTask() *thingms.Task {
 func buildNumrecTasks() []*thingms.Task {
 	tasks := make([]*thingms.Task, 0)
 
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 10; i++ {
 		pngRaw, err := f.ReadFile(fmt.Sprintf("nums/%d.png", i))
 		if err != nil {
 			panic(err)

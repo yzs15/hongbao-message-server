@@ -1,0 +1,11 @@
+{
+  "MacAddr":"",
+  "MsgWsEnd": "172.16.32.12:8080",
+  "MsgZmqEnd": "tcp://172.16.32.12:5557",
+  "Mode":  "cycle",
+  "Period":  "1s",
+  "NumConn":  0,
+  "TotalTime":  "30s",
+  "PeakTime":  "",
+  "PeakNum":  0
+}

@@ -23,25 +23,17 @@ if [ "net" = $ENV ]; then
   fi
 else
   if [ "bj" = $LOC ]; then
-    MAC_ADDR=02:42:ac:12:00:02
     MS_WS_END=192.168.143.3:8082
     MS_ZMQ_END=tcp://192.168.143.3:8081
+    MAC_ADDR=02:42:ac:12:00:02
   else
-    MAC_ADDR=02:42:ac:12:00:03
     MS_WS_END=192.168.143.5:8082
     MS_ZMQ_END=tcp://192.168.143.5:8081
+    MAC_ADDR=02:42:ac:12:00:03
   fi
 fi
 
-prefix=$(date +"%Y-%m-%d %H:")
-cur_min=$(date +"%-M")
-nxt_min=$((cur_min + 1))
-if [ $nxt_min -lt 10 ]; then
-  nxt_min="0"$nxt_min
-fi
-START=$prefix$nxt_min:00
-
-go run cmd/thingcli/thingcli.go -start "$START" \
+go run cmd/thingcli/thingcli.go \
     -duration 30s \
     -ws   $MS_WS_END \
     -zmq  $MS_ZMQ_END \

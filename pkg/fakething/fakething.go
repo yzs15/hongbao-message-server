@@ -1,6 +1,7 @@
 package fakething
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"sync"
@@ -8,17 +9,16 @@ import (
 
 	"gopkg.in/zeromq/goczmq.v4"
 
-	"github.com/gorilla/websocket"
-
 	"ict.ac.cn/hbmsgserver/pkg/idutils"
 
 	"ict.ac.cn/hbmsgserver/pkg/msgserver"
 
 	"ict.ac.cn/hbmsgserver/pkg/czmqutils"
-	"ict.ac.cn/hbmsgserver/pkg/mathutils"
 	"ict.ac.cn/hbmsgserver/pkg/thingms"
 	"ict.ac.cn/hbmsgserver/pkg/timeutils"
 )
+
+const Full = ^uint8(0)
 
 const reqWindow = 10 * time.Millisecond
 
@@ -26,36 +26,14 @@ type Mode string
 
 var wangID = idutils.DeviceId(1, 2)
 
-const (
-	Cycle   Mode = "cycle"   // 周期发送
-	Uniform Mode = "uniform" // 均匀分布
-	Normal  Mode = "normal"  // 正态分布
-)
-
 type Thing struct {
-	ID      uint32
-	MacAddr string
-	Me      uint64
+	Me uint64
 
-	ExpectedTime time.Time
-
-	MsgWsEnd  string
-	MsgZmqEnd string
+	Config
 
 	Tasks []*thingms.Task
 
-	Mode Mode
-
-	Period time.Duration
-
-	NumConn   int
-	TotalTime time.Duration
-	PeakTime  time.Duration
-	PeakNum   int
-
 	mid chan uint32
-
-	wsConn *websocket.Conn
 }
 
 func (c *Thing) Run() {
@@ -67,10 +45,7 @@ func (c *Thing) Run() {
 		}
 	}()
 
-	c.Me = c.waitID()
-	msg := c.waitNextMessage(msgserver.TextMsg)
-	wangID = msg.Sender()
-
+	// 生成每个时间窗口要发送的消息数量
 	var connDis []int
 	var connSum int
 	switch c.Mode {
@@ -85,23 +60,70 @@ func (c *Thing) Run() {
 		log.Fatalf("分布设定不合理，请增大峰值，或增长时间，总连接数为%d", connSum)
 	}
 
+	// 连接 WebScoket
+	conn, err := c.Connect()
+	if err != nil {
+		panic(err)
+	}
+
+	for {
+		_, msgRaw, err := conn.ReadMessage()
+		if err != nil {
+			fmt.Println("recv msg failed: ", err.Error())
+			continue
+		}
+		msg := msgserver.Message(msgRaw)
+
+		go func() {
+			// ID Message
+			if msg.Type() == msgserver.NameMsg {
+				c.handleName(msg)
+				return
+			}
+
+			if msg.Type() != msgserver.TextMsg {
+				fmt.Println("recv wrong type message: ", msg.String())
+				return
+			}
+
+			// Dredge Notice
+			if msg.Body()[0] == Full-1 {
+				c.handleNotice(msg)
+
+			} else {
+				c.handleTest(msg, connDis)
+			}
+		}()
+	}
+}
+
+func (c *Thing) handleName(msg msgserver.Message) {
+	c.Me = msg.Receiver()
+	fmt.Println("My ID: ", idutils.String(c.Me))
+}
+
+func (c *Thing) handleTest(msg msgserver.Message, connDis []int) {
+	wangID = msg.Sender()
+
 	nextTime := time.Now()
 	var wg sync.WaitGroup
 	wg.Add(len(connDis))
 	for _, connNum := range connDis {
 		go func(connNum int) {
+			defer wg.Done()
 			c.concurrentReq(connNum)
-			wg.Done()
 		}(connNum)
 
 		nextTime = nextTime.Add(reqWindow)
 		timeutils.SleepUtil(nextTime)
 	}
 	wg.Wait()
+}
 
-	msg = c.waitNextMessage(msgserver.TextMsg)
+func (c *Thing) handleNotice(msg msgserver.Message) {
+	task := c.Tasks[rand.Intn(len(c.Tasks))].Clone()
 	timeutils.SleepUtil(msg.SendTime().Add(100 * time.Millisecond))
-	c.concurrentReq(1)
+	c.Request(task)
 }
 
 func (c *Thing) concurrentReq(num int) {
@@ -120,25 +142,8 @@ func (c *Thing) concurrentReq(num int) {
 		for ri := 0; ri < curNum; ri++ {
 			go func() {
 				defer wg.Done()
-
 				task := c.Tasks[rand.Intn(len(c.Tasks))].Clone()
-				msg := msgserver.NewMessage(idutils.MessageID(idutils.SvrId32(c.Me), idutils.CliId32(c.Me), <-c.mid),
-					c.Me, wangID, msgserver.TaskMsg, task.ToBytes())
-
-				sockItem, err := czmqutils.GetSock(c.MsgZmqEnd, goczmq.Push)
-				if err != nil {
-					log.Println("czmq get sock failed: ", err)
-					return
-				}
-				defer sockItem.Free()
-
-				msg.SetSendTime()
-				if _, err := czmqutils.Send(sockItem, msg, goczmq.FlagNone); err != nil {
-					log.Println("czmq send failed: ", err)
-				}
-				log.Printf("[%s] send a message, size: %d\n",
-					timeutils.Time2string(msg.SendTime()),
-					len(msg))
+				c.Request(task)
 			}()
 		}
 		time.Sleep(time.Millisecond)
@@ -146,44 +151,20 @@ func (c *Thing) concurrentReq(num int) {
 	wg.Wait()
 }
 
-func (c *Thing) cycleConnDis() ([]int, int) {
-	totalTimeSlice := c.TotalTime.Milliseconds() / reqWindow.Milliseconds()
-	periodSlice := c.Period.Milliseconds() / reqWindow.Milliseconds()
+func (c *Thing) Request(task *thingms.Task) {
+	msg := msgserver.NewMessage(idutils.MessageID(idutils.SvrId32(c.Me), idutils.CliId32(c.Me), <-c.mid),
+		c.Me, wangID, msgserver.TaskMsg, task.ToBytes())
 
-	connSum := int(totalTimeSlice / periodSlice)
-	connDis := make([]int, totalTimeSlice)
-	var i int64
-	for i = 0; i < totalTimeSlice; i += periodSlice {
-		connDis[i] = 1
+	sockItem, err := czmqutils.GetSock(c.MsgZmqEnd, goczmq.Push)
+	if err != nil {
+		log.Println("czmq get sock failed: ", err)
+		return
 	}
-	return connDis, connSum
-}
+	defer sockItem.Free()
 
-func (c *Thing) normalConnDis() ([]int, int) {
-	totalTimeSlice := c.TotalTime.Milliseconds() / reqWindow.Milliseconds()
-	peakTimePos := c.PeakTime.Milliseconds() / reqWindow.Milliseconds()
-	peakPro := float64(c.PeakNum) / float64(c.NumConn)
-
-	var_ := mathutils.CalVariance(peakTimePos, peakPro)
-
-	connSum := 0
-	connDis := make([]int, totalTimeSlice)
-	for i := range connDis {
-		connDis[i] = int((mathutils.NormalFunc(peakTimePos, var_, int64(i)) * float64(c.NumConn)) + 0.5)
-		connSum += connDis[i]
+	msg.SetSendTime()
+	if _, err := czmqutils.Send(sockItem, msg, goczmq.FlagNone); err != nil {
+		log.Println("czmq send failed: ", err)
 	}
-	return connDis, connSum
-}
-
-func (c *Thing) uniformConnDis() ([]int, int) {
-	totalTimeSlice := int(c.TotalTime.Milliseconds() / reqWindow.Milliseconds())
-
-	connNumSlice := c.NumConn / totalTimeSlice
-	connSum := connNumSlice * totalTimeSlice
-
-	connDis := make([]int, totalTimeSlice)
-	for i := range connDis {
-		connDis[i] = connNumSlice
-	}
-	return connDis, connSum
+	log.Printf("[%s] send a message, size: %d\n", timeutils.Time2string(msg.SendTime()), len(msg))
 }

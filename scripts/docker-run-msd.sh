@@ -3,7 +3,7 @@ cd $(dirname "$0")
 cd ..
 
 if [ $# -lt 2 ]; then
-  echo "usage: run.sh ENV LOC"
+  echo "usage: docker-run-msd.sh ENV LOC"
   exit 1
 fi
 

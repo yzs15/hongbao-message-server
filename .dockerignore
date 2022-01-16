@@ -1,4 +1,4 @@
-scripts/*
-docs/*
-.git/
+scripts
+docs
+.git
 README.md

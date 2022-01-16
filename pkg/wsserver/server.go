@@ -58,9 +58,9 @@ func (s *WebSocketServer) ServeWs(w http.ResponseWriter, r *http.Request) {
 			WsClient: client,
 		}
 
-		expId := -1
+		var expId int64 = 0
 		if r.URL.Query().Has("expid") {
-			expId, _ = strconv.Atoi(r.URL.Query().Get("expid"))
+			expId, _ = strconv.ParseInt(r.URL.Query().Get("expid"), 10, 32)
 		}
 
 		cid := s.Registry.Register(cli, uint32(expId))

@@ -17,4 +17,4 @@ PRO_DIR="~/projects/hongbao-ms"
 rsync -aP ./* $SERVER:$PRO_DIR/
 
 ssh $SERVER "tmux send-keys -t $SESSION_NAME:0.0 C-c"
-ssh $SERVER "tmux send-keys -t $SESSION_NAME:0.0 'bash /hongbao-ms/scripts/run.sh $ENV $LOC' C-m"
+ssh $SERVER "tmux send-keys -t $SESSION_NAME:0.0 'bash /hongbao-ms/scripts/run-msd.sh $ENV $LOC' C-m"

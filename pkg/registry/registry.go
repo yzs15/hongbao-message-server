@@ -51,7 +51,7 @@ func (r *Registry) Register(c *Client, expId uint32) uint32 {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	var finalId uint32 = -1
+	var finalId uint32 = 0
 	mac := c.Mac
 	if id, ok := r.mac2id[mac]; ok {
 		finalId = id
