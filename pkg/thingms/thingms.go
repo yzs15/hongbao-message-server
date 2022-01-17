@@ -30,8 +30,6 @@ type ThingMS struct {
 }
 
 func (s *ThingMS) Handle(receiveTime time.Time, msg msgserver.Message) {
-	fmt.Printf("\t%+v\n", msg)
-
 	if idutils.CliId32(msg.Receiver()) == idutils.FullId {
 		s.handleBroadcast(msg, receiveTime)
 		return

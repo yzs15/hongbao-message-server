@@ -62,7 +62,7 @@ func main() {
 	ns.GetServer(me)
 	ns.GetServer(me%2 + 1)
 
-	logStore := logstore.NewLogStore(fmt.Sprintf("%s/msd.log", *logPath))
+	logStore := logstore.NewLogStore(fmt.Sprintf("%s/msd.log", *logPath), ns)
 	go logStore.Run()
 
 	wsHub := wshub.NewHub()

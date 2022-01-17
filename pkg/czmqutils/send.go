@@ -27,11 +27,11 @@ func init() {
 
 func GetSock(endpoint string, typ int) (*sockItem, error) {
 	var sock *sockItem = nil
+	mu.Lock()
+	defer mu.Unlock()
 
 	if _, ok := sockCache[endpoint]; !ok {
-		mu.Lock()
 		sockCache[endpoint] = make([]*sockItem, 0)
-		mu.Unlock()
 	}
 
 	socks := sockCache[endpoint]
@@ -41,14 +41,11 @@ func GetSock(endpoint string, typ int) (*sockItem, error) {
 		}
 
 		if s.Active == false {
-			mu.Lock()
 			if s.Active == true {
-				mu.Unlock()
 				continue
 			}
 
 			s.Active = true
-			mu.Unlock()
 			sock = s
 		}
 	}
@@ -65,9 +62,8 @@ func GetSock(endpoint string, typ int) (*sockItem, error) {
 			Type:   typ,
 			Active: true,
 		}
-		mu.Lock()
 		socks = append(socks, sock)
-		mu.Unlock()
+		sockCache[endpoint] = socks
 	}
 
 	return sock, nil

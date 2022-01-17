@@ -15,21 +15,38 @@ SESSION_NAME=thing
 PRO_DIR='$HOME/projects/hongbao-ms'
 
 tmux has-session -t $SESSION_NAME 2>/dev/null
-if [ $? = 0 ]; then
-  PANE_NUM=$(tmux list-panes -t $SESSION_NAME | wc -l)
-  if [ $PANE_NUM -lt $NUM ]; then
+#if [ $? = 0 ]; then
+#  PANE_NUM=$(tmux list-panes -t $SESSION_NAME | wc -l)
+#  if [ $PANE_NUM -lt $NUM ]; then
     tmux kill-session -t $SESSION_NAME
     tmux new-session -s $SESSION_NAME -d
-    for (( i=1; i<$NUM; i++ ))
+    for (( i=1; i<=($NUM+3)/4; i++ ))
     do
-      tmux split-window -t $SESSION_NAME:0
+      tmux new-window -t $SESSION_NAME:$i
+      tmux split-window -t $SESSION_NAME:$i
+      tmux split-window -t $SESSION_NAME:$i
+      tmux split-window -t $SESSION_NAME:$i
+      tmux select-layout -t $SESSION_NAME:$i tiled
     done
-    tmux select-layout -t $SESSION_NAME:0 tiled
-  fi
-fi
+    tmux kill-window -t $SESSION_NAME:0
+#  fi
+#fi
 
-for (( i=0; i<$NUM; i++))
+idx=0
+for (( wi=1; wi<=($NUM+3)/4; wi++ ))
 do
-  tmux send-keys -t $SESSION_NAME:0.$i C-c
-  tmux send-keys -t $SESSION_NAME:0.$i "bash $PRO_DIR/scripts/docker-run-thing.sh $CONFIG $NODE $i" C-m
+  for (( pi=0; pi<4; pi++ ))
+  do
+    tmux send-keys -t $SESSION_NAME:$wi.$pi C-c C-m
+    tmux send-keys -t $SESSION_NAME:$wi.$pi "bash $PRO_DIR/scripts/docker-run-thing.sh $CONFIG $NODE $idx" C-m
+
+    (( idx++ ))
+    if [[ $idx -eq $NUM ]]; then
+      break
+    fi
+  done
+
+  if [[ $idx -eq $NUM ]]; then
+    break
+  fi
 done

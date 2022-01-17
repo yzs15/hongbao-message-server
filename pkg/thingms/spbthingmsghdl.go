@@ -221,7 +221,7 @@ func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 
 	task_header := task_info.Info2Header()
 
-	czmqutils.Send(sockItem, task_header, goczmq.FlagMore)
+	sendTime, _ := czmqutils.Send(sockItem, task_header, goczmq.FlagMore)
 	//Send(send_task, task_header, goczmq.FlagMore)
 	if task.ServiceID == 1 {
 		if h.With_body {
@@ -245,5 +245,5 @@ func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 
 	send_ok_msg := Recv(sockItem.Sock)
 	fmt.Println("[C] User Task Sent", string(send_ok_msg[0]))
-	return time.Time{}, nil
+	return sendTime, nil
 }

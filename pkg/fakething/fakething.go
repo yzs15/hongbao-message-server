@@ -20,7 +20,7 @@ import (
 
 const Full = ^uint8(0)
 
-const reqWindow = 10 * time.Millisecond
+const reqWindow = 2 * time.Millisecond
 
 type Mode string
 
@@ -107,6 +107,7 @@ func (c *Thing) handleName(msg msgserver.Message) {
 }
 
 func (c *Thing) handleTest(msg msgserver.Message, connDis []int) {
+	ran := rand.New(rand.NewSource(time.Now().Unix()))
 	wangID = msg.Sender()
 
 	nextTime := time.Now()
@@ -115,7 +116,7 @@ func (c *Thing) handleTest(msg msgserver.Message, connDis []int) {
 	for _, connNum := range connDis {
 		go func(connNum int) {
 			defer wg.Done()
-			c.concurrentReq(connNum)
+			c.concurrentReq(connNum, ran)
 		}(connNum)
 
 		nextTime = nextTime.Add(reqWindow)
@@ -130,7 +131,7 @@ func (c *Thing) handleNotice(msg msgserver.Message) {
 	c.Request(task)
 }
 
-func (c *Thing) concurrentReq(num int) {
+func (c *Thing) concurrentReq(num int, ran *rand.Rand) {
 	numPerMs := num / 10
 	numRemain := num % 10
 
@@ -146,7 +147,7 @@ func (c *Thing) concurrentReq(num int) {
 		for ri := 0; ri < curNum; ri++ {
 			go func() {
 				defer wg.Done()
-				task := c.Tasks[rand.Intn(len(c.Tasks))].Clone()
+				task := c.Tasks[ran.Intn(len(c.Tasks))].Clone()
 				c.Request(task)
 			}()
 		}
@@ -170,5 +171,5 @@ func (c *Thing) Request(task *thingms.Task) {
 	if _, err := czmqutils.Send(sockItem, msg, goczmq.FlagNone); err != nil {
 		log.Println("czmq send failed: ", err)
 	}
-	log.Printf("[%s] send a message, size: %d\n", timeutils.Time2string(msg.SendTime()), len(msg))
+	log.Printf("[%s] send a message:%s, size: %d\n", timeutils.Time2string(msg.SendTime()), idutils.String(msg.ID()), len(msg))
 }

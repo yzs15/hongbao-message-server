@@ -19,10 +19,11 @@ type LogStore struct {
 	logPath string
 }
 
-func NewLogStore(logPath string) *LogStore {
+func NewLogStore(logPath string, ns *nameserver.NameServer) *LogStore {
 	return &LogStore{
 		logs:    make([]*Log, 0),
 		add:     make(chan *Log, 1024),
+		ns:      ns,
 		logPath: logPath,
 	}
 }
@@ -59,6 +60,7 @@ func (s *LogStore) id2string(id uint64) string {
 
 	svr, err := s.ns.GetServer(idutils.SvrId32(id))
 	if err != nil {
+		fmt.Println(err)
 		return idutils.String(id)
 	}
 

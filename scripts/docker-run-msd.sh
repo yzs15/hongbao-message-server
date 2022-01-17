@@ -46,7 +46,7 @@ else
 fi
 
 docker pull registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:msd
-docker rmi $(docker image ls -f dangling=true -q)
+# docker rmi $(docker image ls -f dangling=true -q)
 docker stop msd
 docker rm msd
 docker run -it \

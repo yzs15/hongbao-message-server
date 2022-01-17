@@ -8,15 +8,15 @@ if [ $# -lt 3 ]; then
 fi
 
 CONFIG=$1
-NODE=$(printf "%02d" $2)
-IDX=$(printf "%02d" $3)
+NODE=$(printf "%02x" $2)
+IDX=$(printf "%02x" $3)
 
 MAC_ADDR=02:42:ac:12:$NODE:$IDX
 
 CONTAINER_NAME=thing-$IDX
 
 docker pull registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:msd
-docker rmi $(docker image ls -f dangling=true -q)
+# docker rmi $(docker image ls -f dangling=true -q)
 docker stop $CONTAINER_NAME
 docker rm $CONTAINER_NAME
 docker run -it \
