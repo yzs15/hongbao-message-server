@@ -15,6 +15,6 @@ NUM=$4
 
 PRO_DIR='$HOME/projects/hongbao-ms'
 
-rsync -aP ./* $SERVER:$PRO_DIR/  --exclude-from=.gitignore
+rsync -aP ./* $SERVER:$PRO_DIR/  --exclude-from=.gitignore --exclude=bin
 
 ssh $SERVER "bash $PRO_DIR/scripts/tmux-run-thing.sh $CONFIG $NODE $NUM"

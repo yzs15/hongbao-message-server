@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"embed"
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"log"
@@ -87,8 +89,9 @@ func main() {
 	fmt.Println("Msg Server CZMQ: ", conf.MsgZmqEnd)
 
 	thing := &fakething.Thing{
-		Config: conf,
-		Tasks:  buildNumrecTasks(),
+		Config:    conf,
+		LoadTasks: buildNumrecTasks(),
+		CongTasks: buildHongbaoTasks(),
 	}
 
 	thing.Run()
@@ -113,6 +116,34 @@ func buildNumrecTasks() []*thingms.Task {
 		task := &thingms.Task{
 			ServiceID: 1,
 			Args:      pngRaw,
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks
+}
+
+func buildHongbaoTasks() []*thingms.Task {
+	tasks := make([]*thingms.Task, 0)
+
+	content := "恭喜信息高铁开通了！"
+	l := uint32(len(content))
+	lenBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(lenBytes, l)
+
+	for i := 0; i < 10; i++ {
+		pngRaw, err := f.ReadFile(fmt.Sprintf("nums/%d.png", i))
+		if err != nil {
+			panic(err)
+		}
+
+		args := new(bytes.Buffer)
+		args.Write(lenBytes)
+		args.WriteString(content)
+		args.Write(pngRaw)
+
+		task := &thingms.Task{
+			ServiceID: 7,
+			Args:      args.Bytes(),
 		}
 		tasks = append(tasks, task)
 	}

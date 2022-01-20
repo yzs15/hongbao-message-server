@@ -32,13 +32,21 @@ tmux has-session -t $SESSION_NAME 2>/dev/null
 #  fi
 #fi
 
+function restart {
+  wi=$1
+  pi=$2
+  idx=$3
+  tmux send-keys -t $SESSION_NAME:$wi.$pi C-c C-m
+  sleep 1
+  tmux send-keys -t $SESSION_NAME:$wi.$pi "bash $PRO_DIR/scripts/docker-run-thing.sh $CONFIG $NODE $idx" C-m
+}
+
 idx=0
 for (( wi=1; wi<=($NUM+3)/4; wi++ ))
 do
   for (( pi=0; pi<4; pi++ ))
   do
-    tmux send-keys -t $SESSION_NAME:$wi.$pi C-c C-m
-    tmux send-keys -t $SESSION_NAME:$wi.$pi "bash $PRO_DIR/scripts/docker-run-thing.sh $CONFIG $NODE $idx" C-m
+    restart "$wi" "$pi" "$idx" &
 
     (( idx++ ))
     if [[ $idx -eq $NUM ]]; then

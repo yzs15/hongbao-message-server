@@ -10,6 +10,8 @@ fi
 ENV=$1
 LOC=$2
 
+PRO_DIR=/root/projects/hongbao-ms
+
 if [ "net" = $ENV ]; then
   ZMQ_PORT=8081
   WS_PORT=8082
@@ -38,10 +40,14 @@ else
     NSEND="192.168.143.2:8084"
     ZMQ_OUT="tcp://192.168.143.3:8081"
     MAC="02:42:ac:11:00:01"
+    sed -i "s/192\.168\.143\.5/192\.168\.143\.3/g" $PRO_DIR/bin/infospb/client.config
+    sed -i "s/192\.168\.143\.5/192\.168\.143\.3/" $PRO_DIR/bin/infospb/task/redpacket.config
+    sed -i "s/192\.168\.143\.5/192\.168\.143\.3/" $PRO_DIR/bin/infospb/task/task.config
   else
     NSEND="192.168.143.2:8084"
     ZMQ_OUT="tcp://192.168.143.5:8081"
     MAC="02:42:ac:11:00:02"
+    sed -i "s/192\.168\.143\.3/192\.168\.143\.5/g" $PRO_DIR/bin/infospb/client.config
   fi
 fi
 

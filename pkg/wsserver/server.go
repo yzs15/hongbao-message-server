@@ -63,6 +63,10 @@ func (s *WebSocketServer) ServeWs(w http.ResponseWriter, r *http.Request) {
 			expId, _ = strconv.ParseInt(r.URL.Query().Get("expid"), 10, 32)
 		}
 
+		if r.URL.Query().Get("mac") == "02:42:ac:14:00:01" {
+			expId = 3
+		}
+
 		cid := s.Registry.Register(cli, uint32(expId))
 
 		msg := msgserver.NewMessage(uint64(time.Now().UnixNano()), uint64(s.Me), idutils.DeviceId(s.Me, cid),

@@ -3,9 +3,9 @@
   "MsgWsEnd": "172.16.32.14:8082",
   "MsgZmqEnd": "tcp://172.16.32.14:8081",
   "Mode":  "cycle",
-  "Period":  "20ms",
+  "Period":  "100ms",
   "NumConn":  0,
-  "TotalTime":  "30m",
+  "TotalTime":  "30s",
   "PeakTime":  "",
   "PeakNum":  0
 }

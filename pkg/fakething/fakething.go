@@ -21,6 +21,7 @@ import (
 const Full = ^uint8(0)
 
 const reqWindow = 2 * time.Millisecond
+const waitTime = 50 * time.Millisecond
 
 type Mode string
 
@@ -31,7 +32,8 @@ type Thing struct {
 
 	Config
 
-	Tasks []*thingms.Task
+	LoadTasks []*thingms.Task
+	CongTasks []*thingms.Task
 
 	mid chan uint32
 }
@@ -91,7 +93,7 @@ func (c *Thing) Run() {
 			if msg.Body()[0] == Full-1 {
 				c.handleNotice(msg)
 
-			} else if string(msg.Body()) == "开始测试" {
+			} else if msg.Body()[0] == Full-3 {
 				c.handleTest(msg, connDis)
 
 			} else {
@@ -104,6 +106,12 @@ func (c *Thing) Run() {
 func (c *Thing) handleName(msg msgserver.Message) {
 	c.Me = msg.Receiver()
 	fmt.Println("My ID: ", idutils.String(c.Me))
+
+	t := c.LoadTasks[0].Clone()
+	c.Request(t)
+
+	t = c.CongTasks[0].Clone()
+	c.Request(t)
 }
 
 func (c *Thing) handleTest(msg msgserver.Message, connDis []int) {
@@ -126,8 +134,8 @@ func (c *Thing) handleTest(msg msgserver.Message, connDis []int) {
 }
 
 func (c *Thing) handleNotice(msg msgserver.Message) {
-	task := c.Tasks[rand.Intn(len(c.Tasks))].Clone()
-	timeutils.SleepUtil(msg.SendTime().Add(100 * time.Millisecond))
+	task := c.CongTasks[rand.Intn(len(c.CongTasks))].Clone()
+	timeutils.SleepUtil(msg.SendTime().Add(waitTime))
 	c.Request(task)
 }
 
@@ -147,7 +155,7 @@ func (c *Thing) concurrentReq(num int, ran *rand.Rand) {
 		for ri := 0; ri < curNum; ri++ {
 			go func() {
 				defer wg.Done()
-				task := c.Tasks[ran.Intn(len(c.Tasks))].Clone()
+				task := c.LoadTasks[ran.Intn(len(c.LoadTasks))].Clone()
 				c.Request(task)
 			}()
 		}

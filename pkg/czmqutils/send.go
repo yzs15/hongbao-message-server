@@ -47,6 +47,7 @@ func GetSock(endpoint string, typ int) (*sockItem, error) {
 
 			s.Active = true
 			sock = s
+			break
 		}
 	}
 
@@ -72,9 +73,14 @@ func GetSock(endpoint string, typ int) (*sockItem, error) {
 func Send(item *sockItem, data []byte, flag int) (time.Time, error) {
 	sock := item.Sock
 
-	sendTime := time.Now()
-	if err := sock.SendFrame(data, flag); err != nil {
-		return time.Time{}, errors.Wrap(err, "zmq push Sock send frame failed")
+	var sendTime time.Time
+	for {
+		sendTime = time.Now()
+		if err := sock.SendFrame(data, flag); err != nil {
+			continue
+			//return time.Time{}, errors.Wrap(err, "zmq push Sock send frame failed")
+		}
+		break
 	}
 
 	return sendTime, nil

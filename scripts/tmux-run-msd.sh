@@ -20,8 +20,11 @@ if [ $? != 0 ]; then
 fi
 
 tmux send-keys -t $SESSION_NAME:0.0 C-c C-m
+sleep 1
 tmux send-keys -t $SESSION_NAME:0.0 "bash $PRO_DIR/scripts/docker-run-msd.sh $ENV $LOC" C-m
 
 mkdir -p /var/log/hongbao
-tmux send-keys -t $SESSION_NAME:0.1 "touch $PRO_DIR/msd.log" C-m
-tmux send-keys -t $SESSION_NAME:0.1 "$PRO_DIR/bin/logserverd-linux-amd64 -addr 0.0.0.0:8083 -f /var/log/hongbao -f $PRO_DIR/msd.log" C-m
+tmux send-keys -t $SESSION_NAME:0.1 C-c C-m
+sleep 1
+tmux send-keys -t $SESSION_NAME:0.1 "$PRO_DIR/bin/logserverd-linux-amd64 -addr 0.0.0.0:8083 -f $PRO_DIR/msd.log" C-m
+#tmux send-keys -t $SESSION_NAME:0.1 "$PRO_DIR/bin/logserverd-linux-amd64 -addr 0.0.0.0:8083 -f /var/log/hongbao -f $PRO_DIR/msd.log" C-m

@@ -121,6 +121,7 @@ type spbThingMsgHandler struct {
 	Worker_id          uint64
 	Task_send_endpoint string
 	With_body          bool
+	With_body_7        bool
 	Task_path          string
 	Task_config_file   []string
 }
@@ -144,6 +145,7 @@ func NewSpbThingMsgHandler(spbConfig string) TaskMsgHandler {
 		Worker_id:          worker_id,
 		Task_send_endpoint: client_config.Task_send_endpoint,
 		With_body:          true,
+		With_body_7:        true,
 		Task_path:          client_config.Task_path,
 		Task_config_file:   client_config.Task_config_list,
 	}
@@ -161,7 +163,7 @@ func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 		with_body = h.With_body
 	} else if task.ServiceID == 7 {
 		task_config_path = h.Task_path + h.Task_config_file[1]
-		with_body = true
+		with_body = h.With_body_7
 	} else {
 		fmt.Println("[C] Can't find Service ID ", task.ServiceID)
 	}
@@ -224,13 +226,16 @@ func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 	sendTime, _ := czmqutils.Send(sockItem, task_header, goczmq.FlagMore)
 	//Send(send_task, task_header, goczmq.FlagMore)
 	if task.ServiceID == 1 {
-		if h.With_body {
+		if with_body {
 			czmqutils.Send(sockItem, task_buf, goczmq.FlagMore)
 			//Send(send_task, task_buf, goczmq.FlagMore)
 			h.With_body = false
 		}
 	} else if task.ServiceID == 7 {
-		czmqutils.Send(sockItem, task_buf, goczmq.FlagMore)
+		if with_body {
+			czmqutils.Send(sockItem, task_buf, goczmq.FlagMore)
+			h.With_body_7 = false
+		}
 		//Send(send_task, task_buf, goczmq.FlagMore)
 	} else {
 		fmt.Println("[C] Can't find Service ID ", task.ServiceID)

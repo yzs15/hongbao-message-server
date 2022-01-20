@@ -48,7 +48,7 @@ func NewNetThingMsgHandler(
 	cli := &http.Client{
 		Transport: &http.Transport{
 			DialContext: (&net.Dialer{
-				Timeout: 5 * time.Second,
+				Timeout: 60 * time.Second,
 			}).DialContext,
 			TLSHandshakeTimeout:   5 * time.Second,
 			ResponseHeaderTimeout: 5 * time.Second,
@@ -56,7 +56,7 @@ func NewNetThingMsgHandler(
 			DisableKeepAlives:     true,
 			MaxIdleConnsPerHost:   -1,
 		},
-		Timeout: 3 * time.Second,
+		Timeout: 60 * time.Second,
 	}
 
 	return &netThingMsgHandler{
