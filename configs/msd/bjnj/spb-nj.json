@@ -1,0 +1,11 @@
+{
+  "Env": "spb",
+  "WsAddr": "0.0.0.0:5554",
+  "ZmqAddr": "tcp://0.0.0.0:5553",
+  "MacAddr": "02:42:ac:11:00:02",
+  "ZmqOutEnd": "tcp://58.240.113.38:10021",
+  "NsEnd": "58.213.121.2:10029",
+  "SpbConfig": "/hongbao-ms/configs/infospb/client-nj.config",
+  "KubeEnds": [],
+  "LogPath": "/hongbao-ms"
+}

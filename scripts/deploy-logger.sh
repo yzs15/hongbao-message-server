@@ -12,11 +12,12 @@ PORT=$2
 
 GOOS=linux GOARCH=amd64 go build -o bin/logserverd-linux-amd64 cmd/logserverd/logserverd.go
 
-rsync bin/logserverd-linux-amd64 $SERVER:
+rsync bin/logserverd-linux-amd64 $SERVER:projects/
 ssh $SERVER "
 tmux new -s log -d ; \
 tmux send-keys -t log:0.0 C-c ; \
 sleep 1;
-tmux send-keys -t log:0.0 '~/logserverd-linux-amd64 -addr 0.0.0.0:$PORT -f /var/log/hongbao' C-m;
+mkdir -p /var/log/hongbao
+tmux send-keys -t log:0.0 '~/projects/logserverd-linux-amd64 -addr 0.0.0.0:$PORT -f /var/log/hongbao' C-m;
 "
 

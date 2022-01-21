@@ -1,0 +1,13 @@
+{
+  "Env": "net",
+  "WsAddr": "0.0.0.0:5554",
+  "ZmqAddr": "tcp://0.0.0.0:5553",
+  "MacAddr": "02:42:ac:11:00:01",
+  "ZmqOutEnd": "tcp://172.16.32.14:8081",
+  "NsEnd": "172.16.32.13:8084",
+  "SpbConfig": "",
+  "KubeEnds": [
+    "172.16.32.12"
+  ],
+  "LogPath": "/hongbao-ms"
+}

@@ -7,7 +7,7 @@ import (
 )
 
 func (t *Thing) Connect() (*websocket.Conn, error) {
-	u := url.URL{Scheme: "ws", Host: t.MsgWsEnd, Path: "/"}
+	u := url.URL{Scheme: "ws", Host: t.MsgWsEnd[t.SvrIdx], Path: "/"}
 	q := u.Query()
 	q.Set("mac", t.MacAddr)
 	u.RawQuery = q.Encode()

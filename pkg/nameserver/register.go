@@ -12,12 +12,15 @@ import (
 	"ict.ac.cn/hbmsgserver/pkg/msgserver"
 )
 
-func Register(nsEnd, zmqEnd string) uint32 {
+func Register(nsEnd, zmqEnd, mac string) uint32 {
 	cli := getHttpCli()
 
-	mac, err := linuxutils.GetMac()
-	if err != nil {
-		panic(err)
+	if mac == "" {
+		var err error
+		mac, err = linuxutils.GetMac()
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	msgSvr := &MsgSvr{ZMQEndpoint: zmqEnd, Mac: mac}

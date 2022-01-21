@@ -14,5 +14,5 @@ RUN go get github.com/gorilla/websocket && \
         go get gopkg.in/zeromq/goczmq.v4
 
 COPY ./ /hongbao-ms
-RUN GOPROXY=https://goproxy.io,direct go build -o /usr/local/bin/msd cmd/msd/msd.go && \
-        GOPROXY=https://goproxy.io,direct go build -o /usr/local/bin/thingcli cmd/thingcli/thingcli.go
+RUN GOPROXY=https://goproxy.io,direct go build -o /usr/local/bin/msd cmd/msd/*.go && \
+        GOPROXY=https://goproxy.io,direct go build -o /usr/local/bin/thingcli cmd/thingcli/*.go

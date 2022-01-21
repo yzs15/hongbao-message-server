@@ -10,8 +10,8 @@ import (
 
 type Config struct {
 	MacAddr   string
-	MsgWsEnd  string
-	MsgZmqEnd string
+	MsgWsEnd  []string
+	MsgZmqEnd []string
 
 	Mode Mode
 

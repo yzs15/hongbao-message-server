@@ -34,12 +34,15 @@ func (i *StringArrFlag) Set(value string) error {
 	return nil
 }
 
+var msgConfig = flag.String("msdcfg", "", "config file for message server")
+
 var wsAddr = flag.String("ws", "0.0.0.0:5554", "web socket service address")
 var zmqAddr = flag.String("zmq", "tcp://0.0.0.0:5553", "zmq service address")
+var macAddr = flag.String("mac", "", "mac address")
 
 var isNet = flag.Bool("net", false, "in internet environment")
 var isSpb = flag.Bool("spb", false, "in superbahn environment")
-var spbConfig = flag.String("spbcfg", "./bin/infospb/client.config", "config file for info superbahn")
+var spbConfig = flag.String("spbcfg", "./configs/infospb/client.config", "config file for info superbahn")
 
 var kubeEnds StringArrFlag
 
@@ -52,17 +55,37 @@ func main() {
 	flag.Var(&kubeEnds, "kend", "kubernetes' http endpoint")
 	flag.Parse()
 
-	if *zmqOutEnd == "" || *nsEnd == "" {
+	config := &Config{}
+	if *msgConfig != "" {
+		config = ParseConfig(*msgConfig)
+	} else {
+		if *isNet {
+			config.Env = NetEnv
+		} else {
+			config.Env = SpbEnv
+		}
+		config.WsAddr = *wsAddr
+		config.ZmqAddr = *zmqAddr
+		config.MacAddr = *macAddr
+		config.ZmqOutEnd = *zmqOutEnd
+		config.NsEnd = *nsEnd
+		config.SpbConfig = *spbConfig
+		config.KubeEnds = kubeEnds
+		config.LogPath = *logPath
+	}
+	fmt.Printf("%+v\n", config)
+
+	if config.ZmqOutEnd == "" || config.NsEnd == "" {
 		panic("need '-zmq-out' and '-nsend'")
 	}
-	me := nameserver.Register(*nsEnd, *zmqOutEnd)
+	me := nameserver.Register(config.NsEnd, config.ZmqOutEnd, config.MacAddr)
 	fmt.Printf("my id is %d\n", me)
 
-	ns := nameserver.NewNameServer(*nsEnd, me)
-	ns.GetServer(me)
-	ns.GetServer(me%2 + 1)
+	ns := nameserver.NewNameServer(config.NsEnd, me)
+	ns.GetServer(1)
+	ns.GetServer(2)
 
-	logStore := logstore.NewLogStore(fmt.Sprintf("%s/msd.log", *logPath), ns)
+	logStore := logstore.NewLogStore(fmt.Sprintf("%s/msd.log", config.LogPath), ns)
 	go logStore.Run()
 
 	wsHub := wshub.NewHub()
@@ -72,13 +95,13 @@ func main() {
 	go reg.Run()
 
 	var taskMsgHdl thingms.TaskMsgHandler
-	if *isNet {
+	if config.Env == NetEnv {
 		fmt.Println("run in internet")
 		svs := buildNetSvs()
-		taskMsgHdl = thingms.NewNetThingMsgHandler(me, kubeEnds, svs, reg, ns, logStore)
-	} else if *isSpb {
+		taskMsgHdl = thingms.NewNetThingMsgHandler(me, config.KubeEnds, svs, reg, ns, logStore)
+	} else if config.Env == SpbEnv {
 		fmt.Println("run in superbahn")
-		taskMsgHdl = thingms.NewSpbThingMsgHandler(*spbConfig)
+		taskMsgHdl = thingms.NewSpbThingMsgHandler(config.SpbConfig, ns)
 	} else {
 		panic("need to specify environment by '--net' or '--spb'")
 	}
@@ -91,7 +114,7 @@ func main() {
 	}
 
 	wsServer := &wsserver.WebSocketServer{
-		Addr:      *wsAddr,
+		Addr:      config.WsAddr,
 		MsgServer: msgServer,
 		WsHub:     wsHub,
 		Me:        me,
@@ -100,7 +123,7 @@ func main() {
 	go wsServer.Run()
 
 	zmqServer := &czmqserver.CZMQServer{
-		Addr:      *zmqAddr,
+		Addr:      config.ZmqAddr,
 		MsgServer: msgServer,
 	}
 	zmqServer.Run()

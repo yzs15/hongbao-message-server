@@ -7,20 +7,26 @@ import (
 	"flag"
 	"fmt"
 	"log"
-
-	"ict.ac.cn/hbmsgserver/pkg/timeutils"
-
-	"ict.ac.cn/hbmsgserver/pkg/linuxutils"
-
-	"ict.ac.cn/hbmsgserver/pkg/thingms"
+	"sync"
 
 	"ict.ac.cn/hbmsgserver/pkg/fakething"
+	"ict.ac.cn/hbmsgserver/pkg/linuxutils"
+	"ict.ac.cn/hbmsgserver/pkg/thingms"
+	"ict.ac.cn/hbmsgserver/pkg/timeutils"
+)
+
+const (
+	NetEnv = 0
+	SpbEnv = 1
 )
 
 var macAddr = flag.String("mac", "", "the fake mac addr for this fake thing")
 
-var wsAddr = flag.String("ws", "", "http service address")
-var zmqAddr = flag.String("zmq", "", "czmq service address")
+var wsAddrNet = flag.String("ws-net", "", "http service address")
+var zmqAddrNet = flag.String("zmq-net", "", "czmq service address")
+
+var wsAddrSpb = flag.String("wsb-spb", "", "http service address")
+var zmqAddrSpb = flag.String("zmqb-spb", "", "czmq service address")
 
 var modeRaw = flag.String("mode", "cycle", "distribution mode")
 var period timeutils.Duration
@@ -62,8 +68,8 @@ func main() {
 		conf = fakething.Config{
 			MacAddr: *macAddr,
 
-			MsgWsEnd:  *wsAddr,
-			MsgZmqEnd: *zmqAddr,
+			MsgWsEnd:  []string{*wsAddrNet, *wsAddrSpb},
+			MsgZmqEnd: []string{*zmqAddrNet, *zmqAddrSpb},
 
 			Mode: fakething.Mode(*modeRaw),
 
@@ -88,13 +94,36 @@ func main() {
 	fmt.Println("Msg Server WebSocket: ", conf.MsgWsEnd)
 	fmt.Println("Msg Server CZMQ: ", conf.MsgZmqEnd)
 
-	thing := &fakething.Thing{
-		Config:    conf,
-		LoadTasks: buildNumrecTasks(),
-		CongTasks: buildHongbaoTasks(),
+	var wg sync.WaitGroup
+	if conf.MsgWsEnd[NetEnv] != "" {
+		wg.Add(1)
+		thingNet := &fakething.Thing{
+			SvrIdx:    NetEnv,
+			Config:    conf,
+			LoadTasks: buildNumrecTasks(),
+			CongTasks: buildHongbaoTasks(),
+		}
+		go func() {
+			defer wg.Done()
+			thingNet.Run()
+		}()
 	}
 
-	thing.Run()
+	if conf.MsgWsEnd[SpbEnv] != "" {
+		wg.Add(1)
+		thingSpb := &fakething.Thing{
+			SvrIdx:    SpbEnv,
+			Config:    conf,
+			LoadTasks: buildNumrecTasks(),
+			CongTasks: buildHongbaoTasks(),
+		}
+		go func() {
+			defer wg.Done()
+			thingSpb.Run()
+		}()
+	}
+
+	wg.Wait()
 }
 
 func buildFibTask() *thingms.Task {

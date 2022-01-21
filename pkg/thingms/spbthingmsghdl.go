@@ -21,6 +21,10 @@ import (
 	"os"
 	"time"
 
+	"ict.ac.cn/hbmsgserver/pkg/idutils"
+
+	"ict.ac.cn/hbmsgserver/pkg/nameserver"
+
 	"ict.ac.cn/hbmsgserver/pkg/czmqutils"
 
 	"ict.ac.cn/hbmsgserver/pkg/msgserver"
@@ -124,9 +128,11 @@ type spbThingMsgHandler struct {
 	With_body_7        bool
 	Task_path          string
 	Task_config_file   []string
+
+	Ns *nameserver.NameServer
 }
 
-func NewSpbThingMsgHandler(spbConfig string) TaskMsgHandler {
+func NewSpbThingMsgHandler(spbConfig string, ns *nameserver.NameServer) TaskMsgHandler {
 	rand.Seed(time.Now().UnixNano())
 	client_config_file, err := ioutil.ReadFile(spbConfig)
 	if err != nil {
@@ -148,6 +154,7 @@ func NewSpbThingMsgHandler(spbConfig string) TaskMsgHandler {
 		With_body_7:        true,
 		Task_path:          client_config.Task_path,
 		Task_config_file:   client_config.Task_config_list,
+		Ns:                 ns,
 	}
 }
 
@@ -190,9 +197,22 @@ func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 		binary.Read(task_file, binary.LittleEndian, task_buf)
 	}
 
+	fromSvr, err := h.Ns.GetServer(idutils.SvrId32(msg.Sender()))
+	if err != nil {
+		fmt.Println(err)
+		return time.Time{}, err
+	}
+	toSvr, err := h.Ns.GetServer(idutils.SvrId32(msg.Receiver()))
+	if err != nil {
+		fmt.Println(err)
+		return time.Time{}, err
+	}
+
 	var task_info TaskPackageInfo
-	copy(task_info.From[:], []byte(task_config.From))
-	copy(task_info.To[:], []byte(task_config.To))
+	//copy(task_info.From[:], []byte(task_config.From))
+	//copy(task_info.To[:], []byte(task_config.To))
+	copy(task_info.From[:], fromSvr.ZMQEndpoint)
+	copy(task_info.To[:], toSvr.ZMQEndpoint)
 	task_info.Task_sub_id = msg.ID()
 	task_info.Task_type = FUNCTION
 	task_info.Task_body_id = task_config.Task_body_id

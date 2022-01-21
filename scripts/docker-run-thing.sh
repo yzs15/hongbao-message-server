@@ -3,7 +3,7 @@ cd $(dirname "$0")
 cd ..
 
 if [ $# -lt 3 ]; then
-  echo "usage: docker-run-thing.sh CONFIG NODE IDX"
+  echo "usage: docker-run-thing-cfg.sh CONFIG NODE IDX"
   exit 1
 fi
 
@@ -21,7 +21,7 @@ docker stop $CONTAINER_NAME
 docker rm $CONTAINER_NAME
 docker run -it \
   --name $CONTAINER_NAME \
-  -v /root/projects/hongbao-ms:/hongbao-ms \
+  -v $HOME/projects/hongbao-ms:/hongbao-ms \
   --mac-address $MAC_ADDR \
   registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:msd \
   thingcli \

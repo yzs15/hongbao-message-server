@@ -25,10 +25,11 @@ const waitTime = 50 * time.Millisecond
 
 type Mode string
 
-var wangID = idutils.DeviceId(1, 2)
+var wangID = idutils.DeviceId(2, 2)
 
 type Thing struct {
-	Me uint64
+	SvrIdx int
+	Me     uint64
 
 	Config
 
@@ -62,6 +63,10 @@ func (c *Thing) Run() {
 		log.Fatalf("分布设定不合理，请增大峰值，或增长时间，总连接数为%d", connSum)
 	}
 
+	c.connAndServe(connDis)
+}
+
+func (c *Thing) connAndServe(connDis []int) {
 	// 连接 WebScoket
 	conn, err := c.Connect()
 	if err != nil {
@@ -168,7 +173,7 @@ func (c *Thing) Request(task *thingms.Task) {
 	msg := msgserver.NewMessage(idutils.MessageID(idutils.SvrId32(c.Me), idutils.CliId32(c.Me), <-c.mid),
 		c.Me, wangID, msgserver.TaskMsg, task.ToBytes())
 
-	sockItem, err := czmqutils.GetSock(c.MsgZmqEnd, goczmq.Push)
+	sockItem, err := czmqutils.GetSock(c.MsgZmqEnd[c.SvrIdx], goczmq.Push)
 	if err != nil {
 		log.Println("czmq get sock failed: ", err)
 		return
