@@ -19,7 +19,9 @@ if [ $? != 0 ]; then
 fi
 
 tmux send-keys -t $SESSION_NAME:0.0 C-c C-m
-sleep 1
+sleep 3
+tmux send-keys -t $SESSION_NAME:0.0 C-c C-m
+sleep 3
 tmux send-keys -t $SESSION_NAME:0.0 "bash $PRO_DIR/scripts/docker-run-msd-cfg.sh $CONFIG" C-m
 
 mkdir -p /var/log/hongbao

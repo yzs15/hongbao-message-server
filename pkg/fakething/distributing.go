@@ -8,7 +8,16 @@ const (
 	Normal  Mode = "normal"  // 正态分布
 )
 
-func (c *Thing) cycleConnDis() ([]int, int) {
+var disFuncMap map[Mode]func(Config) ([]int, int)
+
+func init() {
+	disFuncMap = make(map[Mode]func(Config) ([]int, int))
+	disFuncMap[Cycle] = cycleConnDis
+	disFuncMap[Normal] = normalConnDis
+	disFuncMap[Uniform] = uniformConnDis
+}
+
+func cycleConnDis(c Config) ([]int, int) {
 	totalTimeSlice := c.TotalTime.Milliseconds() / reqWindow.Milliseconds()
 	periodSlice := c.Period.Milliseconds() / reqWindow.Milliseconds()
 
@@ -21,7 +30,7 @@ func (c *Thing) cycleConnDis() ([]int, int) {
 	return connDis, connSum
 }
 
-func (c *Thing) normalConnDis() ([]int, int) {
+func normalConnDis(c Config) ([]int, int) {
 	totalTimeSlice := c.TotalTime.Milliseconds() / reqWindow.Milliseconds()
 	peakTimePos := c.PeakTime.Milliseconds() / reqWindow.Milliseconds()
 	peakPro := float64(c.PeakNum) / float64(c.NumConn)
@@ -37,7 +46,7 @@ func (c *Thing) normalConnDis() ([]int, int) {
 	return connDis, connSum
 }
 
-func (c *Thing) uniformConnDis() ([]int, int) {
+func uniformConnDis(c Config) ([]int, int) {
 	totalTimeSlice := int(c.TotalTime.Milliseconds() / reqWindow.Milliseconds())
 
 	connNumSlice := c.NumConn / totalTimeSlice

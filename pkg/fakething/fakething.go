@@ -51,13 +51,10 @@ func (c *Thing) Run() {
 	// 生成每个时间窗口要发送的消息数量
 	var connDis []int
 	var connSum int
-	switch c.Mode {
-	case Cycle:
-		connDis, connSum = c.cycleConnDis()
-	case Normal:
-		connDis, connSum = c.normalConnDis()
-	case Uniform:
-		connDis, connSum = c.uniformConnDis()
+	if disFunc, ok := disFuncMap[c.Mode]; ok {
+		connDis, connSum = disFunc(c.Config)
+	} else {
+		log.Fatalf("distribution not found: %s", c.Mode)
 	}
 	if c.Mode != Cycle && float64(connSum) < float64(c.NumConn)*0.9 {
 		log.Fatalf("分布设定不合理，请增大峰值，或增长时间，总连接数为%d", connSum)
@@ -67,7 +64,7 @@ func (c *Thing) Run() {
 }
 
 func (c *Thing) connAndServe(connDis []int) {
-	// 连接 WebScoket
+	// 连接 WebSocket
 	conn, err := c.Connect()
 	if err != nil {
 		panic(err)
@@ -113,10 +110,10 @@ func (c *Thing) handleName(msg msgserver.Message) {
 	fmt.Println("My ID: ", idutils.String(c.Me))
 
 	t := c.LoadTasks[0].Clone()
-	c.Request(t)
+	c.Request(t, c.Me)
 
 	t = c.CongTasks[0].Clone()
-	c.Request(t)
+	c.Request(t, c.Me)
 }
 
 func (c *Thing) handleTest(msg msgserver.Message, connDis []int) {
@@ -139,18 +136,35 @@ func (c *Thing) handleTest(msg msgserver.Message, connDis []int) {
 }
 
 func (c *Thing) handleNotice(msg msgserver.Message) {
-	task := c.CongTasks[rand.Intn(len(c.CongTasks))].Clone()
+	var wg sync.WaitGroup
+	wg.Add(5)
+
+	sid := idutils.SvrId32(c.Me)
+	cliPrefix := idutils.CliId32(c.Me) * 100
+
 	timeutils.SleepUtil(msg.SendTime().Add(waitTime))
-	c.Request(task)
+
+	var i uint32
+	for i = 0; i < 5; i++ {
+		go func(idx uint32) {
+			defer wg.Done()
+			task := c.CongTasks[rand.Intn(len(c.CongTasks))].Clone()
+			c.Request(task, idutils.DeviceId(sid, cliPrefix+idx))
+		}(i)
+		time.Sleep(200 * time.Millisecond)
+	}
+	wg.Wait()
 }
 
+// 一个时间窗口里的请求平均在每一毫秒发出
 func (c *Thing) concurrentReq(num int, ran *rand.Rand) {
-	numPerMs := num / 10
-	numRemain := num % 10
+	msNum := int(reqWindow.Milliseconds() / time.Millisecond.Milliseconds())
+	numPerMs := num / msNum
+	numRemain := num % msNum
 
 	var wg sync.WaitGroup
 	wg.Add(num)
-	for i := 0; i < 10; i++ {
+	for i := 0; i < msNum; i++ {
 		curNum := numPerMs
 		if numRemain > 0 {
 			curNum++
@@ -161,7 +175,7 @@ func (c *Thing) concurrentReq(num int, ran *rand.Rand) {
 			go func() {
 				defer wg.Done()
 				task := c.LoadTasks[ran.Intn(len(c.LoadTasks))].Clone()
-				c.Request(task)
+				c.Request(task, c.Me)
 			}()
 		}
 		time.Sleep(time.Millisecond)
@@ -169,9 +183,9 @@ func (c *Thing) concurrentReq(num int, ran *rand.Rand) {
 	wg.Wait()
 }
 
-func (c *Thing) Request(task *thingms.Task) {
-	msg := msgserver.NewMessage(idutils.MessageID(idutils.SvrId32(c.Me), idutils.CliId32(c.Me), <-c.mid),
-		c.Me, wangID, msgserver.TaskMsg, task.ToBytes())
+func (c *Thing) Request(task *thingms.Task, sender uint64) {
+	msg := msgserver.NewMessage(idutils.MessageID(idutils.SvrId32(sender), idutils.CliId32(sender), <-c.mid),
+		sender, wangID, msgserver.TaskMsg, task.ToBytes())
 
 	sockItem, err := czmqutils.GetSock(c.MsgZmqEnd[c.SvrIdx], goczmq.Push)
 	if err != nil {
