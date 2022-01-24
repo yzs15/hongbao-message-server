@@ -57,6 +57,8 @@ docker run -it \
   -p $ZMQ_PORT:5553 \
   -p 5552:5552 \
   -v /root/projects/hongbao-ms:/hongbao-ms \
+  --device=/dev/ptp0 \
+  --device=/dev/ptp1 \
   --mac-address $MAC \
   registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:msd \
   msd \

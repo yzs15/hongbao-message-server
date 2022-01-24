@@ -217,7 +217,14 @@ func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 	task_info.Task_type = FUNCTION
 	task_info.Task_body_id = task_config.Task_body_id
 	task_info.Worker_id = worker_id
-	task_info.Priority = task_config.Priority
+
+	cid := idutils.CliId32(msg.ID())
+	if cid < 4 {
+		task_info.Priority = 0
+	} else {
+		task_info.Priority = task_config.Priority
+	}
+
 	task_info.Timestamp = uint64(C.my_GetTime())
 	if with_body {
 		task_info.Task_body_size = uint64(task_file_size)
@@ -225,7 +232,16 @@ func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 		task_info.Task_body_size = uint64(0)
 	}
 	task_info.Task_args_size = uint64(len(task.Args) + 8)
-	task_info.Task_QoS.End_before = task_info.Timestamp + task_config.End_before
+
+	mid := idutils.MsgId32(msg.ID())
+	if mid < 200 {
+		task_info.Task_QoS.End_before = uint64(msg.SendTime().UnixNano() + 100)
+	} else if mid < 100 {
+		task_info.Task_QoS.End_before = uint64(msg.SendTime().UnixNano() + 50)
+	} else {
+		task_info.Task_QoS.End_before = uint64(msg.SendTime().UnixNano() + 20)
+	}
+
 	task_info.Task_QoS.Estimate_running_time = task_config.Estimate_running_time
 	task_info.Task_body_constraint.Cpu = task_config.Cpu
 	task_info.Task_body_constraint.Mem = task_config.Mem

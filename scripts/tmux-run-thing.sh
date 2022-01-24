@@ -3,16 +3,24 @@ cd $(dirname "$0")
 cd ..
 
 if [ $# -lt 3 ]; then
-  echo "usage: tmux-run-thing.sh CONFIG NODE NUM"
+  echo "usage: tmux-run-thing.sh CONFIG NODE NUM NO_PULL"
   exit 1
 fi
 
 CONFIG=$1
 NODE=$2
 NUM=$3
+NO_PULL=$4
 
 SESSION_NAME=thing
 PRO_DIR='$HOME/projects/hongbao-ms'
+
+docker stop `docker ps -a --format '{{.Names}}' | grep thing-`
+docker rm `docker ps -a --format '{{.Names}}' | grep thing-`
+
+if [ -z $NO_PULL ]; then
+  docker pull registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:msd
+fi
 
 tmux has-session -t $SESSION_NAME 2>/dev/null
 #if [ $? = 0 ]; then
@@ -38,7 +46,7 @@ function restart {
   idx=$3
   tmux send-keys -t $SESSION_NAME:$wi.$pi C-c C-m
   sleep 1
-  tmux send-keys -t $SESSION_NAME:$wi.$pi "bash $PRO_DIR/scripts/docker-run-thing.sh $CONFIG $NODE $idx" C-m
+  tmux send-keys -t $SESSION_NAME:$wi.$pi "bash $PRO_DIR/scripts/docker-run-thing.sh $CONFIG $NODE $idx $NO_PULL" C-m
 }
 
 idx=0

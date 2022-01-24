@@ -24,5 +24,7 @@ docker run -it \
   -p $ZMQ_PORT:5553 \
   -p 5552:5552 \
   -v $HOME/projects/hongbao-ms:/hongbao-ms \
+  --device=/dev/ptp0 \
+  --device=/dev/ptp1 \
   registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:msd \
   msd -msdcfg $CONFIG
