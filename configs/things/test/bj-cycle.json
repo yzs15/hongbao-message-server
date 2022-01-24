@@ -1,0 +1,17 @@
+{
+  "MacAddr":"",
+  "MsgWsEnd": [
+    "10.208.104.9:8082",
+    "10.208.104.3:8082"
+  ],
+  "MsgZmqEnd": [
+    "tcp://10.208.104.9:8081",
+    "tcp://10.208.104.3:8081"
+  ],
+  "Mode":  "cycle",
+  "Period":  "300ms",
+  "NumConn":  0,
+  "TotalTime":  "40s",
+  "PeakTime":  "",
+  "PeakNum":  0
+}

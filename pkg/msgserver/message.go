@@ -38,7 +38,7 @@ func NewMessage(id, sender, receiver uint64, typ MessageType, body []byte) Messa
 	binary.LittleEndian.PutUint64(receiverBytes, receiver)
 
 	sendTimeBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(sendTimeBytes, uint64(time.Now().UnixNano()))
+	binary.LittleEndian.PutUint64(sendTimeBytes, uint64(timeutils.GetPtpTime().UnixNano()))
 
 	buf.Write(idBytes)
 	buf.Write(senderBytes)
@@ -81,7 +81,7 @@ func (m Message) SetReceiver(id uint64) {
 
 func (m Message) SetSendTime() {
 	l := len(m)
-	t := time.Now()
+	t := timeutils.GetPtpTime()
 	binary.LittleEndian.PutUint64(m[l-8:], uint64(t.UnixNano()))
 }
 

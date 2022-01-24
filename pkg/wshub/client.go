@@ -68,7 +68,8 @@ func (c *Client) ReadPump() {
 			}
 			break
 		}
-		receiveTime := time.Now()
+		receiveTime := timeutils.GetPtpTime()
+
 		go c.MsgServer.Handle(receiveTime, msgRaw)
 		fmt.Printf("[%s] recevie a ws message: %s\n", timeutils.Time2string(receiveTime), msgRaw)
 	}

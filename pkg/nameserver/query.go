@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
 
 	"ict.ac.cn/hbmsgserver/pkg/msgserver"
+	"ict.ac.cn/hbmsgserver/pkg/timeutils"
 )
 
 func Query(nsEnd string, myID uint64, svrID uint32) *MsgSvr {
@@ -18,7 +18,7 @@ func Query(nsEnd string, myID uint64, svrID uint32) *MsgSvr {
 
 	svrIDBytes := make([]byte, 4)
 	binary.LittleEndian.PutUint32(svrIDBytes, svrID)
-	msg := msgserver.NewMessage(uint64(time.Now().UnixNano()), myID, 0,
+	msg := msgserver.NewMessage(uint64(timeutils.GetPtpTime().UnixNano()), myID, 0,
 		msgserver.QueryMsg, svrIDBytes)
 
 	req, err := http.NewRequest("GET", url, bytes.NewBuffer(msg))

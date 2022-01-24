@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"time"
 
+	"ict.ac.cn/hbmsgserver/pkg/timeutils"
+
 	"gopkg.in/zeromq/goczmq.v4"
 
 	"ict.ac.cn/hbmsgserver/pkg/registry"
@@ -129,9 +131,9 @@ func (h *netThingMsgHandler) httpReq(mid uint64, svcId uint8, args []byte) (resu
 	}
 	req.Header.Set("Content-Type", contentType)
 
-	reqTime = time.Now()
+	reqTime = timeutils.GetPtpTime()
 	resp, err := h.httpCli.Do(req)
-	respTime = time.Now()
+	respTime = timeutils.GetPtpTime()
 	if err != nil {
 		err = errors.Wrap(err, "do http request failed")
 		return

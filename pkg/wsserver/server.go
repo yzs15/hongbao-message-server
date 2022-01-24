@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 
 	"ict.ac.cn/hbmsgserver/pkg/idutils"
+	"ict.ac.cn/hbmsgserver/pkg/timeutils"
 
 	"ict.ac.cn/hbmsgserver/pkg/registry"
 
@@ -69,7 +69,7 @@ func (s *WebSocketServer) ServeWs(w http.ResponseWriter, r *http.Request) {
 
 		cid := s.Registry.Register(cli, uint32(expId))
 
-		msg := msgserver.NewMessage(uint64(time.Now().UnixNano()), uint64(s.Me), idutils.DeviceId(s.Me, cid),
+		msg := msgserver.NewMessage(uint64(timeutils.GetPtpTime().UnixNano()), uint64(s.Me), idutils.DeviceId(s.Me, cid),
 			msgserver.NameMsg, []byte(cli.Mac))
 		client.Send <- msg
 

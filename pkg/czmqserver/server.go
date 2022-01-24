@@ -3,7 +3,6 @@ package czmqserver
 import (
 	"bytes"
 	"fmt"
-	"time"
 
 	"ict.ac.cn/hbmsgserver/pkg/idutils"
 
@@ -43,7 +42,7 @@ func (s *CZMQServer) Run() {
 		}
 		msgRaw := msgserver.Message(bytes.Join(msgRaws, []byte{}))
 
-		receiveTime := time.Now()
+		receiveTime := timeutils.GetPtpTime()
 		go s.MsgServer.Handle(receiveTime, msgRaw)
 		fmt.Printf("[%s] recevie a zmq message:%s, size: %d\n", timeutils.Time2string(receiveTime), idutils.String(msgRaw.ID()), len(msgRaw))
 	}

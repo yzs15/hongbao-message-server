@@ -3,11 +3,12 @@ cd $(dirname "$0")
 cd ..
 
 if [ $# -lt 1 ]; then
-  echo "usage: tmux-run-msd-cfg.sh ENV LOC"
+  echo "usage: tmux-run-msd-cfg.sh CONFIG [NO_PULL]"
   exit 1
 fi
 
 CONFIG=$1
+NO_PULL=$2
 
 SESSION_NAME=msd
 PRO_DIR='$HOME/projects/hongbao-ms'
@@ -22,7 +23,7 @@ tmux send-keys -t $SESSION_NAME:0.0 C-c C-m
 sleep 3
 tmux send-keys -t $SESSION_NAME:0.0 C-c C-m
 sleep 3
-tmux send-keys -t $SESSION_NAME:0.0 "bash $PRO_DIR/scripts/docker-run-msd-cfg.sh $CONFIG" C-m
+tmux send-keys -t $SESSION_NAME:0.0 "bash $PRO_DIR/scripts/docker-run-msd-cfg.sh $CONFIG $NO_PULL" C-m
 
 mkdir -p /var/log/hongbao
 #tmux send-keys -t $SESSION_NAME:0.1 C-c C-m

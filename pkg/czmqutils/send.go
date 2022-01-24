@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"ict.ac.cn/hbmsgserver/pkg/timeutils"
+
 	"github.com/pkg/errors"
 	"gopkg.in/zeromq/goczmq.v4"
 )
@@ -75,7 +77,7 @@ func Send(item *sockItem, data []byte, flag int) (time.Time, error) {
 
 	var sendTime time.Time
 	for {
-		sendTime = time.Now()
+		sendTime = timeutils.GetPtpTime()
 		if err := sock.SendFrame(data, flag); err != nil {
 			continue
 			//return time.Time{}, errors.Wrap(err, "zmq push Sock send frame failed")

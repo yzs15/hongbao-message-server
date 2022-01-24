@@ -9,7 +9,7 @@
 int main()
 {
     clockid_t clkid;
-    clkid = utils_get_clockid("/dev/ptp0");
+    clkid = utils_get_clockid("/dev/ptp1");
 
     time_ns sys_clk;
     time_ns ptp_clk;

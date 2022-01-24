@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
 
 	"ict.ac.cn/hbmsgserver/pkg/linuxutils"
 	"ict.ac.cn/hbmsgserver/pkg/msgserver"
+	"ict.ac.cn/hbmsgserver/pkg/timeutils"
 )
 
 func Register(nsEnd, zmqEnd, mac string) uint32 {
@@ -29,7 +29,7 @@ func Register(nsEnd, zmqEnd, mac string) uint32 {
 		panic(err)
 	}
 
-	msg := msgserver.NewMessage(uint64(time.Now().UnixNano()), 0, 0,
+	msg := msgserver.NewMessage(uint64(timeutils.GetPtpTime().UnixNano()), 0, 0,
 		msgserver.RegisterMsg, body)
 
 	url := fmt.Sprintf("http://%s/register", nsEnd)

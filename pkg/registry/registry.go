@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"ict.ac.cn/hbmsgserver/pkg/timeutils"
+
 	"ict.ac.cn/hbmsgserver/pkg/idutils"
 
 	"ict.ac.cn/hbmsgserver/pkg/msgserver"
@@ -89,7 +91,7 @@ func (r *Registry) GetClient(id uint32) (*Client, error) {
 }
 
 func (r *Registry) Broadcast(msg msgserver.Message) time.Time {
-	sendTime := time.Now()
+	sendTime := timeutils.GetPtpTime()
 	r.hub.Broadcast <- msg
 	return sendTime
 }
@@ -100,7 +102,7 @@ func (r *Registry) Send(msg msgserver.Message) (time.Time, error) {
 	if err != nil {
 		return time.Time{}, err
 	}
-	sendTime := time.Now()
+	sendTime := timeutils.GetPtpTime()
 	cli.WsClient.Send <- msg
 	return sendTime, nil
 }

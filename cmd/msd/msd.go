@@ -8,6 +8,9 @@ import (
 	"io"
 	"mime/multipart"
 	"strings"
+	"time"
+
+	"ict.ac.cn/hbmsgserver/pkg/timeutils"
 
 	"ict.ac.cn/hbmsgserver/pkg/nameserver"
 
@@ -74,6 +77,13 @@ func main() {
 		config.LogPath = *logPath
 	}
 	fmt.Printf("%+v\n", config)
+
+	devName := "/dev/ptp1"
+	timeutils.SetClkID(devName)
+	fmt.Println(time.Now())
+	fmt.Println(timeutils.GetSysTime(timeutils.NetEnv))
+	fmt.Println(timeutils.GetSysTime(timeutils.SpbEnv))
+	fmt.Println(timeutils.GetPtpTime())
 
 	if config.ZmqOutEnd == "" || config.NsEnd == "" {
 		panic("need '-zmq-out' and '-nsend'")

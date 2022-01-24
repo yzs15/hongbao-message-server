@@ -21,7 +21,7 @@ import (
 const Full = ^uint8(0)
 
 const reqWindow = 2 * time.Millisecond
-const waitTime = 50 * time.Millisecond
+const waitTime = 1000 * time.Millisecond
 
 type Mode string
 
@@ -47,6 +47,8 @@ func (c *Thing) Run() {
 			c.mid <- id
 		}
 	}()
+
+	fmt.Println("wait time:", waitTime.String())
 
 	// 生成每个时间窗口要发送的消息数量
 	var connDis []int
@@ -120,7 +122,7 @@ func (c *Thing) handleTest(msg msgserver.Message, connDis []int) {
 	ran := rand.New(rand.NewSource(time.Now().Unix()))
 	wangID = msg.Sender()
 
-	nextTime := time.Now()
+	nextTime := timeutils.GetSysTime(c.SvrIdx)
 	var wg sync.WaitGroup
 	wg.Add(len(connDis))
 	for _, connNum := range connDis {
@@ -130,7 +132,7 @@ func (c *Thing) handleTest(msg msgserver.Message, connDis []int) {
 		}(connNum)
 
 		nextTime = nextTime.Add(reqWindow)
-		timeutils.SleepUtil(nextTime)
+		timeutils.SleepUtil(nextTime, c.SvrIdx)
 	}
 	wg.Wait()
 }
@@ -142,7 +144,7 @@ func (c *Thing) handleNotice(msg msgserver.Message) {
 	sid := idutils.SvrId32(c.Me)
 	cliPrefix := idutils.CliId32(c.Me) * 100
 
-	timeutils.SleepUtil(msg.SendTime().Add(waitTime))
+	timeutils.SleepUtil(msg.SendTime().Add(waitTime), c.SvrIdx)
 
 	var i uint32
 	for i = 0; i < 5; i++ {

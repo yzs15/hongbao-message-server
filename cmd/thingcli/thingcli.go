@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"ict.ac.cn/hbmsgserver/pkg/fakething"
 	"ict.ac.cn/hbmsgserver/pkg/linuxutils"
@@ -55,6 +56,13 @@ func main() {
 	flag.Var(&peakTime, "peak-t", "peak time")
 	flag.Parse()
 	log.SetFlags(0)
+
+	devName := "/dev/ptp1"
+	timeutils.SetClkID(devName)
+	fmt.Println(time.Now())
+	fmt.Println(timeutils.GetSysTime(timeutils.NetEnv))
+	fmt.Println(timeutils.GetSysTime(timeutils.SpbEnv))
+	fmt.Println(timeutils.GetPtpTime())
 
 	var conf fakething.Config
 	if len(*configFile) != 0 {
