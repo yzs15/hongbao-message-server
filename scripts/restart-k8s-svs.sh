@@ -13,6 +13,8 @@ SUDO=$2
 SESSION_NAME=k8s
 
 ssh $SERVER "
+tmux send-keys -t $SESSION_NAME:0.0 C-c C-m
+tmux send-keys -t $SESSION_NAME:0.0 C-c C-m
 tmux send-keys -t $SESSION_NAME:0.0 '$SUDO kubectl delete -f ~/projects/k8s/numrecd.yml' C-m
 tmux send-keys -t $SESSION_NAME:0.0 '$SUDO kubectl delete -f ~/projects/k8s/hongbaod.yml' C-m
 tmux send-keys -t $SESSION_NAME:0.0 '$SUDO rm -rf /var/log/hongbao/*' C-m

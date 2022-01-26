@@ -78,7 +78,10 @@ func main() {
 	}
 	fmt.Printf("%+v\n", config)
 
-	devName := "/dev/ptp1"
+	devName := "/dev/ptp0"
+	if config.Env == NetEnv && strings.Contains(config.ZmqOutEnd, "159") {
+		devName = "/dev/ptp1"
+	}
 	timeutils.SetClkID(devName)
 	fmt.Println(time.Now())
 	fmt.Println(timeutils.GetSysTime(timeutils.NetEnv))

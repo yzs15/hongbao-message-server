@@ -3,7 +3,7 @@
   "WsAddr": "0.0.0.0:5554",
   "ZmqAddr": "tcp://0.0.0.0:5553",
   "MacAddr": "02:42:ac:11:00:01",
-  "ZmqOutEnd": "tcp://159.226.41.229:8081",
+  "ZmqOutEnd": "tcp://101.43.150.136:8081",
   "NsEnd": "58.213.121.2:10029",
   "SpbConfig": "/hongbao-ms/configs/infospb/client-bj.config",
   "KubeEnds": [],

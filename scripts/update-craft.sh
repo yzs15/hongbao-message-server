@@ -32,14 +32,19 @@ bash scripts/deploy-msd-cfg.sh hbnj1 configs/msd/bjnj/spb-nj.json
 bash scripts/update-msd-cfg.sh lab3n configs/msd/bjnj/spb-bj.json &
 bash scripts/update-msd-cfg.sh hbnj1 configs/msd/bjnj/spb-nj.json &
 
+ssh hbnj1 "bash /root/thing/ms-start.sh" &
+bash ../hongbao-log/scripts/update-log.sh hbnj4 &
+bash scripts/update-thing.sh lab9 configs/things/bjnj/bj-cycle.json 9 50 no_pull &
+bash scripts/update-thing.sh hbnj5 configs/things/bjnj/nj-cycle.json 5 50 no_pull &
+
 # LFZ 重启物
 ssh hbnj1 "bash /root/thing/ms-start.sh" &
 
 bash ../hongbao-log/scripts/deploy-log.sh lab9 &
 bash ../hongbao-log/scripts/update-log.sh lab9 &
 
-bash scripts/update-thing.sh lab9 configs/things/bjnj/bj-cycle.json 9 5 &
-bash scripts/update-thing.sh hbnj5 configs/things/bjnj/nj-cycle.json 5 15 &
+bash scripts/update-thing.sh lab9 configs/things/bjnj/bj-cycle.json 9 5 no_pull &
+bash scripts/update-thing.sh hbnj5 configs/things/bjnj/nj-cycle.json 5 15 no_pull &
 
 bash scripts/update-thing.sh lab9 configs/things/bjnj/bj-cycle.json 9 1 no_pull &
 bash scripts/update-thing.sh hbnj5 configs/things/bjnj/nj-cycle.json 5 1 no_pull &

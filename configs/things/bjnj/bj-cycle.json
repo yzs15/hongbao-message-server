@@ -9,7 +9,7 @@
     "tcp://10.208.104.3:8081"
   ],
   "Mode":  "cycle",
-  "Period":  "100ms",
+  "Period":  "50ms",
   "NumConn":  0,
   "TotalTime":  "40s",
   "PeakTime":  "",

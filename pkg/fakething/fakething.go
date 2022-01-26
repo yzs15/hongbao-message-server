@@ -20,8 +20,8 @@ import (
 
 const Full = ^uint8(0)
 
-const reqWindow = 2 * time.Millisecond
-const waitTime = 1000 * time.Millisecond
+const reqWindow = 1 * time.Millisecond
+const waitTime = 100 * time.Millisecond
 
 type Mode string
 
@@ -150,7 +150,14 @@ func (c *Thing) handleNotice(msg msgserver.Message) {
 	for i = 0; i < 5; i++ {
 		go func(idx uint32) {
 			defer wg.Done()
-			task := c.CongTasks[rand.Intn(len(c.CongTasks))].Clone()
+
+			var task *thingms.Task
+			if c.SvrIdx == timeutils.SpbEnv {
+				task = c.CongTasks[rand.Intn(len(c.CongTasks))].Clone()
+			} else {
+				task = c.LoadTasks[rand.Intn(len(c.LoadTasks))].Clone()
+			}
+
 			c.Request(task, idutils.DeviceId(sid, cliPrefix+idx))
 		}(i)
 		time.Sleep(200 * time.Millisecond)

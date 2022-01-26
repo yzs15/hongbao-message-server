@@ -84,7 +84,7 @@ type TaskConfig struct {
 }
 
 func get_fake_worker_id() uint64 {
-	return uint64(rand.Intn(99999999))
+	return 99999998
 }
 
 func get_fake_task_sub_id() uint64 {
@@ -236,7 +236,7 @@ func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 	mid := idutils.MsgId32(msg.ID())
 	if mid < 200 {
 		task_info.Task_QoS.End_before = uint64(msg.SendTime().UnixNano() + 100)
-	} else if mid < 100 {
+	} else if mid < 300 {
 		task_info.Task_QoS.End_before = uint64(msg.SendTime().UnixNano() + 50)
 	} else {
 		task_info.Task_QoS.End_before = uint64(msg.SendTime().UnixNano() + 20)
@@ -284,7 +284,7 @@ func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 	czmqutils.Send(sockItem, args, goczmq.FlagNone)
 	//Send(send_task, task.Args, goczmq.FlagNone)
 
-	send_ok_msg := Recv(sockItem.Sock)
-	fmt.Println("[C] User Task Sent", string(send_ok_msg[0]))
+	Recv(sockItem.Sock)
+	//fmt.Println("[C] User Task Sent", string(send_ok_msg[0]))
 	return sendTime, nil
 }

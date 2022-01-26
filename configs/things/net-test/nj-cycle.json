@@ -9,7 +9,7 @@
     ""
   ],
   "Mode":  "cycle",
-  "Period":  "12000ms",
+  "Period":  "100ms",
   "NumConn":  0,
   "TotalTime":  "40s",
   "PeakTime":  "",

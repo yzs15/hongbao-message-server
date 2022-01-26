@@ -6,14 +6,14 @@ import (
 	"encoding/binary"
 	"flag"
 	"fmt"
-	"log"
-	"sync"
-	"time"
-
 	"ict.ac.cn/hbmsgserver/pkg/fakething"
 	"ict.ac.cn/hbmsgserver/pkg/linuxutils"
 	"ict.ac.cn/hbmsgserver/pkg/thingms"
 	"ict.ac.cn/hbmsgserver/pkg/timeutils"
+	"log"
+	"strings"
+	"sync"
+	"time"
 )
 
 const (
@@ -57,13 +57,6 @@ func main() {
 	flag.Parse()
 	log.SetFlags(0)
 
-	devName := "/dev/ptp1"
-	timeutils.SetClkID(devName)
-	fmt.Println(time.Now())
-	fmt.Println(timeutils.GetSysTime(timeutils.NetEnv))
-	fmt.Println(timeutils.GetSysTime(timeutils.SpbEnv))
-	fmt.Println(timeutils.GetPtpTime())
-
 	var conf fakething.Config
 	if len(*configFile) != 0 {
 		var err error
@@ -101,6 +94,16 @@ func main() {
 	fmt.Println("My Mac Addr: ", conf.MacAddr)
 	fmt.Println("Msg Server WebSocket: ", conf.MsgWsEnd)
 	fmt.Println("Msg Server CZMQ: ", conf.MsgZmqEnd)
+
+	devName := "/dev/ptp0"
+	if strings.Contains(conf.MacAddr, "02:42:ac:12:09") {
+		devName = "/dev/ptp1"
+	}
+	timeutils.SetClkID(devName)
+	fmt.Println(time.Now())
+	fmt.Println(timeutils.GetSysTime(timeutils.NetEnv))
+	fmt.Println(timeutils.GetSysTime(timeutils.SpbEnv))
+	fmt.Println(timeutils.GetPtpTime())
 
 	var wg sync.WaitGroup
 	if conf.MsgWsEnd[NetEnv] != "" {

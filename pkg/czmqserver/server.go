@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"ict.ac.cn/hbmsgserver/pkg/idutils"
-
 	"ict.ac.cn/hbmsgserver/pkg/timeutils"
 
 	"ict.ac.cn/hbmsgserver/pkg/msgserver"
@@ -33,7 +31,6 @@ func (s *CZMQServer) Run() {
 	cnt := 0
 	for {
 		cnt++
-		fmt.Println("Receiving ", cnt)
 		// FIXME 随机出现 'recv frame error' 错误，目前采用忽略的方式
 		msgRaws, err := pullSock.RecvMessage()
 		if err != nil {
@@ -44,6 +41,6 @@ func (s *CZMQServer) Run() {
 
 		receiveTime := timeutils.GetPtpTime()
 		go s.MsgServer.Handle(receiveTime, msgRaw)
-		fmt.Printf("[%s] recevie a zmq message:%s, size: %d\n", timeutils.Time2string(receiveTime), idutils.String(msgRaw.ID()), len(msgRaw))
+		//fmt.Printf("[%s] recevie a zmq message:%s, size: %d\n", timeutils.Time2string(receiveTime), idutils.String(msgRaw.ID()), len(msgRaw))
 	}
 }
