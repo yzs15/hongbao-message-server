@@ -3,6 +3,7 @@ package logstore
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"ict.ac.cn/hbmsgserver/pkg/nameserver"
@@ -56,6 +57,10 @@ func (s *LogStore) Run() {
 func (s *LogStore) id2string(id uint64) string {
 	if idutils.CliId32(id) != 0 || idutils.MsgId32(id) != 0 {
 		return idutils.String(id)
+	}
+
+	if id >= 100 {
+		return strconv.FormatInt(int64(id), 10)
 	}
 
 	svr, err := s.ns.GetServer(idutils.SvrId32(id))

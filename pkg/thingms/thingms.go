@@ -115,6 +115,12 @@ func (s *ThingMS) handleBroadcast(msg msgserver.Message, receiveTime time.Time) 
 func (s *ThingMS) handleText(msg msgserver.Message, receiveTime time.Time) {
 	s.LogStore.Add(msg.ID(), msg.Sender(), msg.Receiver(), uint64(s.Me), receiveTime, logstore.Receive)
 
+	if msg.Receiver() == idutils.DeviceId(2, 1) && s.Me == 2 {
+		s.LogStore.Add(msg.ID(), msg.Sender(), msg.Receiver(), uint64(s.Me), time.Now(), logstore.Send)
+		s.LogStore.Add(msg.ID(), msg.Receiver(), uint64(s.Me), msg.Receiver(), time.Now(), logstore.Receive)
+		return
+	}
+
 	sendTime, err := s.Registry.Send(msg)
 	if err != nil {
 		fmt.Println(err)

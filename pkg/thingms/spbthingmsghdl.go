@@ -234,6 +234,7 @@ func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 	task_info.Task_args_size = uint64(len(task.Args) + 8)
 
 	mid := idutils.MsgId32(msg.ID())
+	//task_info.Task_QoS.End_before = uint64(msg.SendTime().UnixNano() + 50)
 	if mid < 200 {
 		task_info.Task_QoS.End_before = uint64(msg.SendTime().UnixNano() + 100)
 	} else if mid < 300 {

@@ -9,7 +9,7 @@
     "tcp://192.168.143.1:8081"
   ],
   "Mode":  "cycle",
-  "Period":  "100ms",
+  "Period":  "200ms",
   "NumConn":  0,
   "TotalTime":  "40s",
   "PeakTime":  "",

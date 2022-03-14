@@ -13,6 +13,6 @@ LOC=$3
 
 PRO_DIR='$HOME/projects/hongbao-ms'
 
-rsync -aP ./* $SERVER:$PRO_DIR/  --exclude-from=.gitignore
+rsync -aP ./* $SERVER:$PRO_DIR/  --exclude-from=.gitignore --exclude=data
 
 ssh $SERVER "bash $PRO_DIR/scripts/tmux-run-msd.sh $ENV $LOC"

@@ -4,9 +4,9 @@ unset http_proxy
 unset https_proxy
 unset ALL_PROXY
 
-PERIOD=200
-THING_NUM=64
-TOTAL=$((40*($THING_NUM*1000/PERIOD)))
+PERIOD=800
+THING_NUM=4
+TOTAL=$((40*$THING_NUM*1000/PERIOD))
 
 ##### reconfigure things #####
 sed -i '' "s/[0-9]\{1,\}ms/${PERIOD}ms/g" configs/things/all-test/bj-cycle.json
@@ -30,12 +30,12 @@ ssh lab9  "tmux send-keys -t msd:0.0 C-c" &
 ssh hbnj4 "tmux send-keys -t msd:0.0 C-c" &
 
 ##### stop all things #####
-#ssh lab3n "tmux kill-session -t thing" &
-#ssh lab9  "tmux kill-session -t thing" &
-#ssh hbnj1 "tmux kill-session -t thing" &
-#ssh hbnj2 "tmux kill-session -t thing" &
-#ssh hbnj4 "tmux kill-session -t thing" &
-#ssh hbnj5 "tmux kill-session -t thing" &
+ssh lab3n "tmux kill-session -t thing" &
+ssh lab9  "tmux kill-session -t thing" &
+ssh hbnj1 "tmux kill-session -t thing" &
+ssh hbnj2 "tmux kill-session -t thing" &
+ssh hbnj4 "tmux kill-session -t thing" &
+ssh hbnj5 "tmux kill-session -t thing" &
 #ssh hbnj1 "bash /root/thing/ms-stop.sh" &
 wait
 
@@ -57,7 +57,7 @@ fi
 wait
 
 ##### start all message server #####
-NO_PULL=""
+NO_PULL="no"
 bash scripts/update-msd-cfg.sh lab3n configs/msd/bjnj/spb-bj.json $NO_PULL &
 bash scripts/update-msd-cfg.sh hbnj1 configs/msd/bjnj/spb-nj.json $NO_PULL &
 bash scripts/update-msd-cfg.sh lab9  configs/msd/bjnj/net-bj.json $NO_PULL &
@@ -71,12 +71,12 @@ bash ../hongbao-log/scripts/update-log.sh hbnj4 &
 
 ##### start all things #####
 # ssh hbnj1 "bash /root/thing/ms-start.sh" &
-bash scripts/update-thing.sh lab9  configs/things/all-test/bj-cycle.json 9 40 no_pull &
-bash scripts/update-thing.sh hbnj2 configs/things/all-test/nj-cycle.json 2 8  no_pull &
-bash scripts/update-thing.sh hbnj5 configs/things/all-test/nj-cycle.json 5 16 no_pull &
+#bash scripts/update-thing.sh lab9  configs/things/all-test/bj-cycle.json 9 40 no_pull &
+#bash scripts/update-thing.sh hbnj2 configs/things/all-test/nj-cycle.json 2 8  no_pull &
+#bash scripts/update-thing.sh hbnj5 configs/things/all-test/nj-cycle.json 5 16 no_pull &
 
-#bash scripts/update-thing.sh lab9  configs/things/all-test/bj-cycle.json 9 2 no_pull &
-#bash scripts/update-thing.sh hbnj5 configs/things/all-test/nj-cycle.json 5 2 no_pull &
+bash scripts/update-thing.sh lab9  configs/things/all-test/bj-cycle.json 9 2 no_pull &
+bash scripts/update-thing.sh hbnj5 configs/things/all-test/nj-cycle.json 5 2 no_pull &
 
 # bash scripts/update-thing.sh hbnj1 configs/things/all-test/nj-cycle.json 1 40 no_pull &
 # bash scripts/update-thing.sh hbnj2 configs/things/all-test/nj-cycle.json 2 40 no_pull &
@@ -91,9 +91,9 @@ cd ../hongbao-log
 source ./venv/bin/activate
 
 python3 ./src/mock_wang.py spb
-sleep $((1*60))
+sleep $((30))
 
 #python3 ./src/mock_wang.py net
-#sleep $((1*60))
+#sleep $((30))
 
 bash scripts/down-logs.sh hbnj4
