@@ -217,9 +217,36 @@ func buildNetSvs() map[uint8]*thingms.NetService {
 		},
 	}
 
+	noiseSvs := &thingms.NetService{
+		Method: "POST",
+		Port:   "32200",
+		Path:   thingms.NilPath,
+		Body: func(args []byte) (io.Reader, string) {
+			var b bytes.Buffer
+			w := multipart.NewWriter(&b)
+
+			fw, err := w.CreateFormFile("img", "num")
+			if err != nil {
+				fmt.Println(err)
+				return nil, ""
+			}
+
+			_, err = fw.Write(args)
+			if err != nil {
+				fmt.Println(err)
+				return nil, ""
+			}
+			w.Close()
+
+			return &b, w.FormDataContentType()
+		},
+	}
+
 	svs[1] = numrecdSvs
 	svs[2] = fibSvs
 	svs[7] = hongbaoSvs
+	svs[8] = noiseSvs
+
 
 	return svs
 }

@@ -22,13 +22,29 @@ fi
 # docker rmi $(docker image ls -f dangling=true -q)
 docker stop msd
 docker rm msd
-docker run -it \
-  --name msd \
-  -p $WS_PORT:5554 \
-  -p $ZMQ_PORT:5553 \
-  -p 5552:5552 \
-  -v $HOME/projects/hongbao-ms:/hongbao-ms \
-  --device=/dev/ptp0 \
-  --device=/dev/ptp1 \
-  registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:msd \
-  msd -msdcfg $CONFIG
+
+if [[ $CONFIG =~ "net" ]]; then
+    docker run -it \
+      --name msd \
+      -v $HOME/projects/hongbao-ms:/hongbao-ms \
+      --device=/dev/ptp0 \
+      --device=/dev/ptp1 \
+      --network host \
+      --cpu-period=100000 --cpu-quota=10000000 \
+      registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:msd \
+      bash -c "ulimit -n 65535 && msd -msdcfg $CONFIG"
+
+else
+    docker run -it \
+      --name msd \
+      -v $HOME/projects/hongbao-ms:/hongbao-ms \
+      --device=/dev/ptp0 \
+      --device=/dev/ptp1 \
+      --network host \
+      --cpuset-cpus 0-14 \
+      registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:msd \
+      bash -c "ulimit -n 65535 && msd -msdcfg $CONFIG"
+fi
+
+# --cpu-period=100000 --cpu-quota=10000000 \
+# --cpuset-cpus 0-14 \

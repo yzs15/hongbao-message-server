@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: msd
+  labels:
+    app: msd
+spec:
+  selector:
+    matchLabels:
+      app: msd
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: msd
+    spec:
+      containers:
+      - name: msd
+        image: registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:msd
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 5552
+            hostPort: 5552
+          - containerPort: 5553
+            hostPort: 8081
+          - containerPort: 5554
+            hostPort: 8082
+        command: ["msd"]
+        args: ["-msdcfg", "/hongbao-ms/configs/msd/bjnj/net-bj.json"]
+        env:
+          - name: NODE_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+        volumeMounts:
+          - name: log-dir
+            mountPath: /root
+          - name: dev-dir
+            mountPath: /dev
+          - name: msd-dir
+            mountPath: /hongbao-ms
+        securityContext:
+          privileged: true
+      volumes:
+        - name: log-dir
+          hostPath:
+            path: /var/log/hongbao
+            type: Directory
+        - name: dev-dir
+          hostPath:
+            path: /dev
+            type: Directory
+        - name: msd-dir
+          hostPath:
+            path: /home/zsj/projects/hongbao-ms
+            type: Directory
+      nodeSelector:
+        kubernetes.io/hostname: dell-poweredge-r940xa

@@ -1,6 +1,7 @@
 #!/bin/bash
 cd $(dirname "$0")
 cd ..
+. scripts/utils.sh
 
 if [ $# -lt 1 ]; then
   echo "usage: deploy-logger.sh SERVER SUDO"
@@ -8,16 +9,11 @@ if [ $# -lt 1 ]; then
 fi
 
 SERVER=$1
-SUDO=$2
+YML_NAME=$2
+SUDO=$3
 
 SESSION_NAME=k8s
 
-ssh $SERVER "
-tmux send-keys -t $SESSION_NAME:0.0 C-c C-m
-tmux send-keys -t $SESSION_NAME:0.0 C-c C-m
-tmux send-keys -t $SESSION_NAME:0.0 '$SUDO kubectl delete -f ~/projects/k8s/numrecd.yml' C-m
-tmux send-keys -t $SESSION_NAME:0.0 '$SUDO kubectl delete -f ~/projects/k8s/hongbaod.yml' C-m
-tmux send-keys -t $SESSION_NAME:0.0 '$SUDO rm -rf /var/log/hongbao/*' C-m
-tmux send-keys -t $SESSION_NAME:0.0 '$SUDO kubectl apply -f ~/projects/k8s/numrecd.yml' C-m
-"
+PRO_DIR='projects/hongbao-ms'
+ensure_ok ssh $SERVER "'""bash $PRO_DIR/scripts/restart-k8s-svs-local.sh $YML_NAME $SUDO""'"
 # tmux send-keys -t $SESSION_NAME:0.0 '$SUDO kubectl apply -f ~/projects/k8s/hongbaod.yml' C-m

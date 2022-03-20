@@ -2,6 +2,7 @@ package fakething
 
 import (
 	"fmt"
+	"github.com/gorilla/websocket"
 	"log"
 	"math/rand"
 	"sync"
@@ -34,6 +35,7 @@ type Thing struct {
 	Config
 
 	LoadTasks []*thingms.Task
+	NoisTasks []*thingms.Task
 	CongTasks []*thingms.Task
 
 	mid chan uint32
@@ -67,9 +69,13 @@ func (c *Thing) Run() {
 
 func (c *Thing) connAndServe(connDis []int) {
 	// 连接 WebSocket
-	conn, err := c.Connect()
-	if err != nil {
-		panic(err)
+	var conn *websocket.Conn
+	for {
+		var err error
+		conn, err = c.Connect()
+		if err == nil {
+			break
+		}
 	}
 
 	for {
@@ -112,10 +118,10 @@ func (c *Thing) handleName(msg msgserver.Message) {
 	fmt.Println("My ID: ", idutils.String(c.Me))
 
 	t := c.LoadTasks[0].Clone()
-	c.Request(t, c.Me)
+	c.Request(t, c.Me, false)
 
 	t = c.CongTasks[0].Clone()
-	c.Request(t, c.Me)
+	c.Request(t, c.Me, false)
 }
 
 func (c *Thing) handleTest(msg msgserver.Message, connDis []int) {
@@ -158,7 +164,7 @@ func (c *Thing) handleNotice(msg msgserver.Message) {
 				task = c.LoadTasks[rand.Intn(len(c.LoadTasks))].Clone()
 			}
 
-			c.Request(task, idutils.DeviceId(sid, cliPrefix+idx))
+			c.Request(task, idutils.DeviceId(sid, cliPrefix+idx), false)
 		}(i)
 		time.Sleep(200 * time.Millisecond)
 	}
@@ -183,8 +189,14 @@ func (c *Thing) concurrentReq(num int, ran *rand.Rand) {
 		for ri := 0; ri < curNum; ri++ {
 			go func() {
 				defer wg.Done()
-				task := c.LoadTasks[ran.Intn(len(c.LoadTasks))].Clone()
-				c.Request(task, c.Me)
+				for li := 0; li < c.LoadNumPer; li ++ {
+					task := c.LoadTasks[ran.Intn(len(c.LoadTasks))].Clone()
+					go c.Request(task, c.Me, false)
+				}
+				for ni := 0; ni < c.NoisNumPer; ni++ {
+					task := c.NoisTasks[ran.Intn(len(c.NoisTasks))].Clone()
+					go c.Request(task, c.Me, true)
+				}
 			}()
 		}
 		time.Sleep(time.Millisecond)
@@ -192,8 +204,13 @@ func (c *Thing) concurrentReq(num int, ran *rand.Rand) {
 	wg.Wait()
 }
 
-func (c *Thing) Request(task *thingms.Task, sender uint64) {
-	msg := msgserver.NewMessage(idutils.MessageID(idutils.SvrId32(sender), idutils.CliId32(sender), <-c.mid),
+func (c *Thing) Request(task *thingms.Task, sender uint64, isNoise bool) {
+	mid := <-c.mid
+	if isNoise {
+		mid = (1<<19) | mid
+	}
+
+	msg := msgserver.NewMessage(idutils.MessageID(idutils.SvrId32(sender), idutils.CliId32(sender), mid),
 		sender, wangID, msgserver.TaskMsg, task.ToBytes())
 
 	sockItem, err := czmqutils.GetSock(c.MsgZmqEnd[c.SvrIdx], goczmq.Push)

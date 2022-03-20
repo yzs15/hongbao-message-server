@@ -28,6 +28,7 @@ docker run -it \
   --device=/dev/ptp0 \
   --device=/dev/ptp1 \
   --mac-address $MAC_ADDR \
+  --cpuset-cpus $3 \
   registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:msd \
   thingcli \
     -config /hongbao-ms/$CONFIG

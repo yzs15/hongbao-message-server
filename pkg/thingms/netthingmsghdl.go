@@ -131,8 +131,9 @@ func (h *netThingMsgHandler) httpReq(mid uint64, svcId uint8, args []byte) (resu
 	endIdx := rand.Intn(len(h.KubeEndpoints))
 	//endIdx := 0
 	endpoint := h.KubeEndpoints[endIdx]
-	//h.logStore.Add(mid+(10000<<40), uint64(h.Me), uint64(endIdx) + 10000, uint64(h.Me), timeutils.GetPtpTime(), "cust")
+	//h.logStore.Add(mid+(10000<<40), uint64(h.Me), uint64(111) + 10000, uint64(h.Me), timeutils.GetPtpTime(), "cust")
 	url := fmt.Sprintf("http://%s:%s%s", endpoint, service.Port, path)
+	//url := fmt.Sprintf("http://%s:%s%s", "numrecd.default", "8080", path)
 
 	req, err := http.NewRequest(service.Method, url, body)
 	if err != nil {

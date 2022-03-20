@@ -15,6 +15,8 @@ type Config struct {
 
 	Mode Mode
 
+	LoadNumPer int
+	NoisNumPer int
 	Period timeutils.Duration
 
 	NumConn   int

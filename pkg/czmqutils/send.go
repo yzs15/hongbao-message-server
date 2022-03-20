@@ -6,7 +6,6 @@ import (
 
 	"ict.ac.cn/hbmsgserver/pkg/timeutils"
 
-	"github.com/pkg/errors"
 	"gopkg.in/zeromq/goczmq.v4"
 )
 
@@ -18,22 +17,53 @@ type sockItem struct {
 
 func (i *sockItem) Free() {
 	i.Active = false
+	<-concurrencyCtl
 }
 
 var mu sync.Mutex
 var sockCache map[string][]*sockItem
 
+var concurrencyCtl chan struct{}
+
 func init() {
 	sockCache = make(map[string][]*sockItem)
+	concurrencyCtl = make(chan struct{}, 1000)
+}
+
+func createSocketItem(endpoint string, typ int) *sockItem {
+	var s *goczmq.Sock
+	for {
+		s = goczmq.NewSock(typ)
+		err := s.Connect(endpoint)
+		if err != nil {
+			continue
+		}
+		break
+	}
+
+	return &sockItem{
+		Sock:   s,
+		Type:   typ,
+		Active: false,
+	}
 }
 
 func GetSock(endpoint string, typ int) (*sockItem, error) {
+	concurrencyCtl <- struct{}{}
+
 	var sock *sockItem = nil
 	mu.Lock()
 	defer mu.Unlock()
 
 	if _, ok := sockCache[endpoint]; !ok {
-		sockCache[endpoint] = make([]*sockItem, 0)
+		sock = createSocketItem(endpoint, typ)
+		sock.Active = true
+
+		socks := make([]*sockItem, 0)
+		socks = append(socks, sock)
+		sockCache[endpoint] = socks
+
+		return sock, nil
 	}
 
 	socks := sockCache[endpoint]
@@ -43,10 +73,6 @@ func GetSock(endpoint string, typ int) (*sockItem, error) {
 		}
 
 		if s.Active == false {
-			if s.Active == true {
-				continue
-			}
-
 			s.Active = true
 			sock = s
 			break
@@ -54,17 +80,9 @@ func GetSock(endpoint string, typ int) (*sockItem, error) {
 	}
 
 	if sock == nil {
-		s := goczmq.NewSock(typ)
-		err := s.Connect(endpoint)
-		if err != nil {
-			return nil, errors.Wrap(err, "create zmq push Sock failed")
-		}
+		sock = createSocketItem(endpoint, typ)
+		sock.Active = true
 
-		sock = &sockItem{
-			Sock:   s,
-			Type:   typ,
-			Active: true,
-		}
 		socks = append(socks, sock)
 		sockCache[endpoint] = socks
 	}

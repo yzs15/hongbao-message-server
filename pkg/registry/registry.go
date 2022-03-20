@@ -28,7 +28,7 @@ type Registry struct {
 
 	idGenerator chan uint32
 
-	mu sync.Mutex
+	mu sync.RWMutex
 
 	hub *wshub.Hub
 }
@@ -78,6 +78,9 @@ func (r *Registry) Register(c *Client, expId uint32) uint32 {
 }
 
 func (r *Registry) GetClient(id uint32) (*Client, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	cli, ok := r.id2client[id]
 	if !ok {
 		return nil, errors.New("no this client")

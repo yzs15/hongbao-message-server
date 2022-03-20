@@ -1,0 +1,134 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: APP_NAME
+  labels:
+    app: APP_NAME
+spec:
+  selector:
+    matchLabels:
+      app: APP_NAME
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: APP_NAME
+    spec:
+      containers:
+      - name: APP_NAME
+        image: registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:numrecd
+        imagePullPolicy: IfNotPresent
+#        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        # livenessProbe:
+        #   httpGet:
+        #     path: /healthz
+        #     port: 8080
+        #   failureThreshold: 1
+        #   initialDelaySeconds: 20
+        #   periodSeconds: 10
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          failureThreshold: 10
+          initialDelaySeconds: 1
+          periodSeconds: 2
+        resources:
+          limits:
+            cpu: CPU_LIMIT
+          requests:
+            cpu: CPU_REQUEST
+        env:
+        - name: NODE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        volumeMounts:
+            - name: log-dir
+              mountPath: /root
+      volumes:
+        - name: log-dir
+          hostPath:
+            path: /var/log/hongbao
+            type: Directory
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: APP_NAME
+  labels:
+    app: APP_NAME
+spec:
+  selector:
+    app: APP_NAME
+  ports:
+  - nodePort: 32100
+    protocol: TCP
+    port: 8080
+    targetPort: 8080
+  type: NodePort
+
+
+---
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: APP_NAME
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: APP_NAME
+  minReplicas: INIT_REPLICA_NUM
+  maxReplicas: MAX_REPLICA_NUM
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: CPU_SCALE_THRESHOLD
+#  - type: Resource
+#    resource:
+#      name: memory
+#      target:
+#        type: Utilization
+#        averageUtilization: 60
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Pods
+        value: CPU_SCALE_UP_LIMIT
+        periodSeconds: 1
+#      - type: Percent
+#        value: 900
+#        periodSeconds: 1
+    scaleDown:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Pods
+        value: 1000
+        periodSeconds: 1
+#  behavior:
+#   scaleDown:
+#     stabilizationWindowSeconds: 300
+#     policies:
+#     - type: Percent
+#       value: 100
+#       periodSeconds: 15
+#   scaleUp:
+#     stabilizationWindowSeconds: 0
+#     policies:
+#     - type: Percent
+#       value: 100
+#       periodSeconds: 15
+#     - type: Pods
+#       value: 4
+#       periodSeconds: 15
+#     selectPolicy: Max
+

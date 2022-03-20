@@ -3,3 +3,4 @@ docs
 .git
 README.md
 configs
+logs/

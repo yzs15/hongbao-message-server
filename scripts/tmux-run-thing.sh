@@ -15,8 +15,8 @@ NO_PULL=$4
 SESSION_NAME=thing
 PRO_DIR='$HOME/projects/hongbao-ms'
 
-docker stop `docker ps -a --format '{{.Names}}' | grep thing-`
-docker rm `docker ps -a --format '{{.Names}}' | grep thing-`
+docker stop `docker ps -a --format '{{.Names}}' | grep thing-` > /dev/null
+docker rm `docker ps -a --format '{{.Names}}' | grep thing-` > /dev/null
 
 if [ -z $NO_PULL ]; then
   docker pull registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:msd

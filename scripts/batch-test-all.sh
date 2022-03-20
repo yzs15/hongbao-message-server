@@ -1,18 +1,39 @@
-for ((i=0;i<2;i++))
+ENV=net
+
+LOG_PAR_DIR="/Volumes/Elements/logs-k8s-4C8C-batch"
+
+sed -i '' "s/[\#]\{0,\}. scripts/conf-2C4C.sh/. scripts/conf-2C4C.sh/g" scripts/test-all.sh
+sed -i '' "s/[\#]\{0,\}. scripts\/conf-noise.sh/\#. scripts\/conf-noise.sh/g" scripts/test-all.sh
+
+# test 4C8C
+sed -i '' "s/CPU_REQUEST=[0-9]\{1,\}/CPU_REQUEST=4/g" scripts/test-all.sh
+sed -i '' "s/CPU_LIMIT=[0-9]\{1,\}/CPU_LIMIT=8/g" scripts/test-all.sh
+
+for ((i=0;i<3;i++))
 do
-#    for period in 12 13 14 15 25 50 100 200 400 800 1600
-#    do
-#        sed -i '' "s/PERIOD=[0-9]\{1,\}/PERIOD=$period/g" scripts/test-all.sh
-#        echo "======+++++    start $period $i    +++++========="
-#        bash scripts/test-all.sh
-#        echo "======+++++    end   $period $i    +++++========="
-#    done
+    for period in 10 12 13 14 15 25 50 100 200 400 800 1600
+    do
+        echo "======+++++    start large $period $i    +++++========="
+        while :
+        do
+            timeout --foreground "$((20*60))" bash scripts/test-all.sh $ENV large $period "$LOG_PAR_DIR"
+            if [ $? -eq 0 ]; then
+                break
+            fi
+        done
+        echo "======+++++    end   large $period $i    +++++========="
+    done
 
     for period in 200 400 800 1600
     do
-        sed -i '' "s/PERIOD=[0-9]\{1,\}/PERIOD=$period/g" scripts/test-all-small.sh
-        echo "======+++++    start $period $i    +++++========="
-        bash scripts/test-all-small.sh
-        echo "======+++++    end   $period $i    +++++========="
+        echo "======+++++    start small $period $i    +++++========="
+        while :
+        do
+            timeout --foreground "$((20*60))" bash scripts/test-all.sh $ENV small $period "$LOG_PAR_DIR"
+            if [ $? -eq 0 ]; then
+                break
+            fi
+        done
+        echo "======+++++    end   small $period $i    +++++========="
     done
 done

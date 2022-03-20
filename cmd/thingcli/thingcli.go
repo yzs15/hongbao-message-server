@@ -111,7 +111,8 @@ func main() {
 		thingNet := &fakething.Thing{
 			SvrIdx:    NetEnv,
 			Config:    conf,
-			LoadTasks: buildNumrecTasks(),
+			LoadTasks: buildNumrecTasks(1),
+			NoisTasks: buildNumrecTasks(8),
 			CongTasks: buildHongbaoTasks(),
 		}
 		go func() {
@@ -125,7 +126,8 @@ func main() {
 		thingSpb := &fakething.Thing{
 			SvrIdx:    SpbEnv,
 			Config:    conf,
-			LoadTasks: buildNumrecTasks(),
+			LoadTasks: buildNumrecTasks(1),
+			NoisTasks: buildNumrecTasks(8),
 			CongTasks: buildHongbaoTasks(),
 		}
 		go func() {
@@ -144,7 +146,7 @@ func buildFibTask() *thingms.Task {
 	}
 }
 
-func buildNumrecTasks() []*thingms.Task {
+func buildNumrecTasks(svsId uint8) []*thingms.Task {
 	tasks := make([]*thingms.Task, 0)
 
 	for i := 0; i < 10; i++ {
@@ -154,7 +156,7 @@ func buildNumrecTasks() []*thingms.Task {
 		}
 
 		task := &thingms.Task{
-			ServiceID: 1,
+			ServiceID: svsId,
 			Args:      pngRaw,
 		}
 		tasks = append(tasks, task)
