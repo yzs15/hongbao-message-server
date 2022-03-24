@@ -2,10 +2,13 @@ ENV=net
 
 cp configs/k8s/numrecd-normal-detail.yaml.template configs/k8s/numrecd-detail.yaml.template
 
-LOG_PAR_DIR="/Volumes/Elements/logs-k8s-exp2-resource-limit-with-noise-batch"
+LOG_PAR_DIR="/Volumes/Elements/logs-k8s-exp2-resource-limit-with-noise-batch-3-23-valid"
 
-CPU_REQUESTS=(100m 1 2 4 10m)
-CPU_LIMITS=(200m 2 4 8 20)
+#CPU_REQUESTS=(100m 1 2 4 10m)
+#CPU_LIMITS=(200m 2 4 8 20)
+
+CPU_REQUESTS=(10m)
+CPU_LIMITS=(20)
 
 sed -i '' "s/[\#]\{0,\}. scripts\/conf-2C4C.sh/\#. scripts\/conf-2C4C.sh/g" scripts/test-all.sh
 sed -i '' "s/[\#]\{0,\}. scripts\/conf-noise.sh/. scripts\/conf-noise.sh/g" scripts/test-all.sh
@@ -23,12 +26,13 @@ do
 
     for ((i=0;i<3;i++))
     do
-        for period in 15 25 50 100
+        for period in 10 15 25 50 100
         do
             echo "======+++++    start large $period $i    +++++========="
             while :
             do
-                timeout --foreground "$((20*60))" bash scripts/test-all.sh $ENV large $period "$LOG_PAR_DIR"
+                # timeout --foreground "$((20*60))" bash scripts/test-all.sh $ENV large $period "$LOG_PAR_DIR"
+                bash scripts/test-all.sh $ENV large $period "$LOG_PAR_DIR"
                 if [ $? -eq 0 ]; then
                     break
                 fi

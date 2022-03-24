@@ -1,6 +1,6 @@
 # K8s 容器 配置
-export CPU_REQUEST=2
-export CPU_LIMIT=4
+export CPU_REQUEST=4
+export CPU_LIMIT=8
 export CPU_SCALE_THRESHOLD=60
 export CPU_SCALE_UP_LIMIT=1000
 export INIT_REPLICA_NUM=1

@@ -31,8 +31,10 @@ echo    "==================================="
 echo    "===        configuration        ==="
 echo    "==================================="
 
-#. scripts/conf-2C4C.sh
-. scripts/conf-noise.sh
+# 平常使用这个
+. scripts/conf-2C4C.sh
+# K8s测试脚本使用这个
+# . scripts/conf-noise.sh
 
 if [ "large" = "$SIZE" ]; then
     THING_NUM=64
@@ -42,7 +44,7 @@ else
     echo "no such size: " $SIZE
     exit 1
 fi
-TOTAL=$((THING_NUM * (TOTAL_TIME * 1000 / PERIOD)))
+export TOTAL=$((THING_NUM * (TOTAL_TIME * 1000 / PERIOD)))
 
 LOG_PAR_DIR=${4-"/Volumes/Elements/logs"}
 LOG_DIR="$LOG_PAR_DIR/$CUR_DATETIME-$ENV-$TOTAL"
@@ -61,6 +63,9 @@ echo "PERIOD:     " $PERIOD
 echo "TOTAL:      " $TOTAL
 echo "TOTAL_TIME: " $TOTAL_TIME
 echo "NOISE:      " $WITH_NOISE
+echo "CPU_SCALE_THRESHOLD" $CPU_SCALE_THRESHOLD
+echo "CPU_REQUEST " $CPU_REQUEST
+echo "CPU_LIMIT" $CPU_LIMIT
 
 
 ##### sync scripts and other things to server
@@ -161,14 +166,14 @@ echo    "===        reconfigure          ==="
 echo    "==================================="
 
 ##### reconfigure things #####
-sed -i '' "s/[0-9]\{1,\}ms/${PERIOD}ms/g"   configs/things/$THING_CONF_DIR/bj-cycle.json
-sed -i '' "s/[0-9]\{1,\}ms/${PERIOD}ms/g"   configs/things/$THING_CONF_DIR/nj-cycle.json
-sed -i '' "s/[0-9]\{1,\}s/${TOTAL_TIME}s/g" configs/things/$THING_CONF_DIR/bj-cycle.json
-sed -i '' "s/[0-9]\{1,\}s/${TOTAL_TIME}s/g" configs/things/$THING_CONF_DIR/nj-cycle.json
-sed -i '' "s/\"LoadNumPer\": [0-9]\{1,\}/\"LoadNumPer\": ${LOAD_NUM_PER}/g"  configs/things/$THING_CONF_DIR/bj-cycle.json
-sed -i '' "s/\"LoadNumPer\": [0-9]\{1,\}/\"LoadNumPer\": ${LOAD_NUM_PER}/g"  configs/things/$THING_CONF_DIR/nj-cycle.json
-sed -i '' "s/\"NoisNumPer\": [0-9]\{1,\}/\"NoisNumPer\": ${NOISE_NUM_PER}/g" configs/things/$THING_CONF_DIR/bj-cycle.json
-sed -i '' "s/\"NoisNumPer\": [0-9]\{1,\}/\"NoisNumPer\": ${NOISE_NUM_PER}/g" configs/things/$THING_CONF_DIR/nj-cycle.json
+sed -i '' "s/\"Period\":\(.*\)/\"Period\":\"${PERIOD}ms\",/g"   configs/things/$THING_CONF_DIR/bj-cycle.json
+sed -i '' "s/\"Period\":\(.*\)/\"Period\":\"${PERIOD}ms\",/g"   configs/things/$THING_CONF_DIR/nj-cycle.json
+sed -i '' "s/\"TotalTime\":\(.*\)/\"TotalTime\":\"${TOTAL_TIME}s\",/g" configs/things/$THING_CONF_DIR/bj-cycle.json
+sed -i '' "s/\"TotalTime\":\(.*\)/\"TotalTime\":\"${TOTAL_TIME}s\",/g" configs/things/$THING_CONF_DIR/nj-cycle.json
+sed -i '' "s/\"LoadNumPer\":\(.*\)/\"LoadNumPer\": ${LOAD_NUM_PER},/g"  configs/things/$THING_CONF_DIR/bj-cycle.json
+sed -i '' "s/\"LoadNumPer\":\(.*\)/\"LoadNumPer\": ${LOAD_NUM_PER},/g"  configs/things/$THING_CONF_DIR/nj-cycle.json
+sed -i '' "s/\"NoisNumPer\":\(.*\)/\"NoisNumPer\": ${NOISE_NUM_PER},/g" configs/things/$THING_CONF_DIR/bj-cycle.json
+sed -i '' "s/\"NoisNumPer\":\(.*\)/\"NoisNumPer\": ${NOISE_NUM_PER},/g" configs/things/$THING_CONF_DIR/nj-cycle.json
 
 ##### reconfigure real things #####
 # ssh hbnj1 "
@@ -267,8 +272,8 @@ fi
 # bash scripts/update-thing.sh hbnj5 configs/things/$THING_CONF_DIR/nj-cycle.json 5 40 no_pull &
 wait
 
-echo "sleep 30s"
-sleep 30
+echo "sleep 20s"
+sleep 20
 
 
 
@@ -357,4 +362,25 @@ fi
 } &
 wait
 
-bash scripts/analyze.sh $LOG_DIR
+echo    "==================================="
+echo    "===  analyze CPU usage          ==="
+echo    "==================================="
+bash scripts/analyze.sh $LOG_DIR &
+
+
+##### delete k8s services #####
+if [[ "net" == $ENV ]] || [[ "all" == $ENV ]]; then
+    echo    "==================================="
+    echo    "===  delete K8s services        ==="
+    echo    "==================================="
+
+    {
+        bash scripts/stop-k8s-svs.sh lab9  numrecd sudo
+        bash scripts/stop-k8s-svs.sh lab9  numrecd-noise sudo
+    } &
+    {
+        bash scripts/stop-k8s-svs.sh hbnj4 numrecd
+        bash scripts/stop-k8s-svs.sh hbnj4 numrecd-noise
+    } &
+fi
+wait

@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: numrecd
+  name: numrecd256000
   labels:
-    app: numrecd
+    app: numrecd256000
 spec:
   selector:
     matchLabels:
-      app: numrecd
+      app: numrecd256000
   replicas: 1
   template:
     metadata:
       labels:
-        app: numrecd
+        app: numrecd256000
     spec:
       containers:
-      - name: numrecd
+      - name: numrecd256000
         image: registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:numrecd
         imagePullPolicy: IfNotPresent
 #        imagePullPolicy: Always
@@ -37,9 +37,9 @@ spec:
           periodSeconds: 2
         resources:
           limits:
-            cpu: 200m
+            cpu: 8
           requests:
-            cpu: 100m
+            cpu: 4
         env:
         - name: NODE_IP
           valueFrom:
@@ -58,12 +58,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: numrecd
+  name: numrecd256000
   labels:
-    app: numrecd
+    app: numrecd256000
 spec:
   selector:
-    app: numrecd
+    app: numrecd256000
   ports:
   - nodePort: 32100
     protocol: TCP
@@ -77,12 +77,12 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: numrecd
+  name: numrecd256000
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: numrecd
+    name: numrecd256000
   minReplicas: 1
   maxReplicas: 1000
   metrics:

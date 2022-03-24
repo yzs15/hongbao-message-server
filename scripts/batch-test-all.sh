@@ -1,13 +1,16 @@
 ENV=net
 
-LOG_PAR_DIR="/Volumes/Elements/logs-k8s-4C8C-batch"
-
-sed -i '' "s/[\#]\{0,\}. scripts/conf-2C4C.sh/. scripts/conf-2C4C.sh/g" scripts/test-all.sh
-sed -i '' "s/[\#]\{0,\}. scripts\/conf-noise.sh/\#. scripts\/conf-noise.sh/g" scripts/test-all.sh
+LOG_PAR_DIR="/Volumes/Elements/logs-k8s-4C8C-batch-3-23-valid"
+# sed -i '' "s/[\#]\{0,\}. scripts/conf-2C4C.sh/. scripts/conf-2C4C.sh/g" scripts/test-all.sh
+# sed -i '' "s/[\#]\{0,\}. scripts\/conf-noise.sh/\#. scripts\/conf-noise.sh/g" scripts/test-all.sh
+# sed -i '' "s/[\#]\{0,\}. scripts\/conf-2C4C.sh/\#. scripts\/conf-2C4C.sh/g" scripts/test-all.sh
+# sed -i '' "s/[\#]\{0,\}. scripts\/conf-noise.sh/. scripts\/conf-noise.sh/g" scripts/test-all.sh
 
 # test 4C8C
-sed -i '' "s/CPU_REQUEST=[0-9]\{1,\}/CPU_REQUEST=4/g" scripts/test-all.sh
-sed -i '' "s/CPU_LIMIT=[0-9]\{1,\}/CPU_LIMIT=8/g" scripts/test-all.sh
+# sed -i '' "s/CPU_REQUEST=[0-9]\{1,\}/CPU_REQUEST=4/g" scripts/test-all.sh
+# sed -i '' "s/CPU_LIMIT=[0-9]\{1,\}/CPU_LIMIT=8/g" scripts/test-all.sh
+sed -i '' "s/CPU_REQUEST=\(.*\)/CPU_REQUEST=4/g" scripts/conf-2C4C.sh
+sed -i '' "s/CPU_LIMIT=\(.*\)/CPU_LIMIT=8/g" scripts/conf-2C4C.sh
 
 for ((i=0;i<3;i++))
 do

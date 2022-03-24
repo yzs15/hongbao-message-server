@@ -1,4 +1,5 @@
 YAML_FILEPATH=configs/k8s/numrecd.yml
+echo "TOTAL yml " $TOTAL
 sed "s/APP_NAME/numrecd$TOTAL/g" configs/k8s/numrecd-detail.yaml.template > $YAML_FILEPATH
 sed -i '' "s/CPU_REQUEST/$CPU_REQUEST/g" $YAML_FILEPATH
 sed -i '' "s/CPU_LIMIT/$CPU_LIMIT/g" $YAML_FILEPATH
