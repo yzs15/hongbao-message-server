@@ -1,21 +1,31 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: numrecd-135680-27284
+  name: APP_NAME
   labels:
-    app: numrecd-135680-27284
+    app: APP_NAME
 spec:
   selector:
     matchLabels:
-      app: numrecd-135680-27284
-  replicas: 1
+      app: APP_NAME
+  replicas: 2
   template:
     metadata:
       labels:
-        app: numrecd-135680-27284
+        app: APP_NAME
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - APP_NAME
+            topologyKey: "kubernetes.io/hostname"
       containers:
-      - name: numrecd-135680-27284
+      - name: APP_NAME
         image: registry.cn-beijing.aliyuncs.com/zhengsj/hongbao:numrecd
         imagePullPolicy: IfNotPresent
 #        imagePullPolicy: Always
@@ -37,9 +47,9 @@ spec:
           periodSeconds: 2
         resources:
           limits:
-            cpu: 20
+            cpu: CPU_LIMIT
           requests:
-            cpu: 10m
+            cpu: CPU_REQUEST
         env:
         - name: NODE_IP
           valueFrom:
@@ -58,12 +68,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: numrecd-135680-27284
+  name: APP_NAME
   labels:
-    app: numrecd-135680-27284
+    app: APP_NAME
 spec:
   selector:
-    app: numrecd-135680-27284
+    app: APP_NAME
   ports:
   - nodePort: 32100
     protocol: TCP
@@ -77,21 +87,21 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: numrecd-135680-27284
+  name: APP_NAME
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: numrecd-135680-27284
-  minReplicas: 1
-  maxReplicas: 1000
+    name: APP_NAME
+  minReplicas: INIT_REPLICA_NUM
+  maxReplicas: MAX_REPLICA_NUM
   metrics:
   - type: Resource
     resource:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 60
+        averageUtilization: CPU_SCALE_THRESHOLD
 #  - type: Resource
 #    resource:
 #      name: memory
@@ -103,7 +113,7 @@ spec:
       stabilizationWindowSeconds: 0
       policies:
       - type: Pods
-        value: 1000
+        value: CPU_SCALE_UP_LIMIT
         periodSeconds: 1
 #      - type: Percent
 #        value: 900

@@ -23,8 +23,8 @@ tmux send-keys -t $SESSION_NAME:0.0 C-c C-m
 sleep 3
 tmux send-keys -t $SESSION_NAME:0.0 C-c C-m
 sleep 3
+tmux send-keys -t $SESSION_NAME:0.0 "rm -f  $PRO_DIR/msd.log" C-m
 tmux send-keys -t $SESSION_NAME:0.0 "bash $PRO_DIR/scripts/docker-run-msd-cfg.sh $CONFIG $NO_PULL" C-m
-
 mkdir -p /var/log/hongbao
 #tmux send-keys -t $SESSION_NAME:0.1 C-c C-m
 #sleep 1

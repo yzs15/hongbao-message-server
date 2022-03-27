@@ -11,9 +11,9 @@
   "Mode":  "cycle",
   "LoadNumPer": 1,
   "NoisNumPer": 0,
-  "Period":  "6ms",
+  "Period":"10ms",
   "NumConn":  0,
-  "TotalTime":  "40s",
+  "TotalTime":"40s",
   "PeakTime":  "",
   "PeakNum":  0
 }

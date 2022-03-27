@@ -17,12 +17,14 @@ type Config struct {
 
 	LoadNumPer int
 	NoisNumPer int
-	Period timeutils.Duration
+	Period     timeutils.Duration
 
-	NumConn   int
-	TotalTime timeutils.Duration
-	PeakTime  timeutils.Duration
-	PeakNum   int
+	NumConn       int
+	TotalTime     timeutils.Duration
+	PeakTime      timeutils.Duration
+	PeakNum       int
+	MaxTaskPerSec int
+	LinearRatio   int //每秒增加的任务数目
 }
 
 func GetConfig(filename string) (Config, error) {

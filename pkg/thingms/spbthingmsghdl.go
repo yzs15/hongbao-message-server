@@ -234,6 +234,32 @@ func (h *spbThingMsgHandler) Handle(msg msgserver.Message) (time.Time, error) {
 	task_info.Task_args_size = uint64(len(task.Args) + 8)
 
 	mid := idutils.MsgId32(msg.ID())
+	svrID := idutils.SvrId32(msg.ID())
+	if (1 << 19 & mid) == 0 {
+		task_info.Priority = 0
+	} else {
+		task_info.Priority = 1
+	}
+	if svrID == 1 {
+		//beijing
+		if mid%2 == 1 {
+			task_info.Task_QoS.End_before = uint64(msg.SendTime().UnixNano() + 50)
+		} else {
+			task_info.Task_QoS.End_before = uint64(msg.SendTime().UnixNano() + 100)
+		}
+	} else if svrID == 2 {
+		//nanjing
+		if mid%2 == 0 {
+			task_info.Task_QoS.End_before = uint64(msg.SendTime().UnixNano() + 100)
+		} else if mid%4 == 1 {
+			task_info.Task_QoS.End_before = uint64(msg.SendTime().UnixNano() + 50)
+		} else if mid%4 == 3 {
+			task_info.Task_QoS.End_before = uint64(msg.SendTime().UnixNano() + 20)
+		}
+	} else {
+		fmt.Println("error svrID", svrID)
+		os.Exit(1)
+	}
 	//task_info.Task_QoS.End_before = uint64(msg.SendTime().UnixNano() + 50)
 	if mid < 200 {
 		task_info.Task_QoS.End_before = uint64(msg.SendTime().UnixNano() + 100)

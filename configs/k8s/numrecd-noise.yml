@@ -36,10 +36,10 @@ spec:
           initialDelaySeconds: 1
           periodSeconds: 2
         resources:
-          limits:
-            cpu: 2
+          # limits:
+          #   cpu: 
           requests:
-            cpu: 1
+            cpu: 18
         env:
         - name: NODE_IP
           valueFrom:
@@ -76,8 +76,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: numrecd-noise
-  minReplicas: 1
-  maxReplicas: 1000
+  minReplicas: 2
+  maxReplicas: 2
   metrics:
   - type: Resource
     resource:

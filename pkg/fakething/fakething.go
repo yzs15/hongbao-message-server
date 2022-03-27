@@ -2,11 +2,12 @@ package fakething
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
 	"log"
 	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
 
 	"gopkg.in/zeromq/goczmq.v4"
 
@@ -24,6 +25,9 @@ const Full = ^uint8(0)
 const reqWindow = 1 * time.Millisecond
 const waitTime = 100 * time.Millisecond
 
+// const maxTaskPerSec = 120
+// const linearRatio = 4 //每秒增加的任务数目
+
 type Mode string
 
 var wangID = idutils.DeviceId(2, 2)
@@ -38,7 +42,8 @@ type Thing struct {
 	NoisTasks []*thingms.Task
 	CongTasks []*thingms.Task
 
-	mid chan uint32
+	mid      chan uint32
+	midNoise chan uint32
 }
 
 func (c *Thing) Run() {
@@ -47,6 +52,14 @@ func (c *Thing) Run() {
 		var id uint32
 		for id = 1; ; id++ {
 			c.mid <- id
+		}
+	}()
+
+	go func() {
+		c.midNoise = make(chan uint32, 10000)
+		var id uint32
+		for id = 1; ; id++ {
+			c.midNoise <- id
 		}
 	}()
 
@@ -120,8 +133,12 @@ func (c *Thing) handleName(msg msgserver.Message) {
 	t := c.LoadTasks[0].Clone()
 	c.Request(t, c.Me, false)
 
-	t = c.CongTasks[0].Clone()
-	c.Request(t, c.Me, false)
+	// t = c.CongTasks[0].Clone()
+	// c.Request(t, c.Me, false)
+
+	mid := <-c.midNoise
+	task := c.NoisTasks[0].Clone()
+	go c.RequestV2(task, c.Me, true, mid)
 }
 
 func (c *Thing) handleTest(msg msgserver.Message, connDis []int) {
@@ -189,13 +206,16 @@ func (c *Thing) concurrentReq(num int, ran *rand.Rand) {
 		for ri := 0; ri < curNum; ri++ {
 			go func() {
 				defer wg.Done()
-				for li := 0; li < c.LoadNumPer; li ++ {
+
+				for li := 0; li < c.LoadNumPer; li++ {
+					mid := <-c.mid
 					task := c.LoadTasks[ran.Intn(len(c.LoadTasks))].Clone()
-					go c.Request(task, c.Me, false)
+					go c.RequestV2(task, c.Me, false, mid)
 				}
 				for ni := 0; ni < c.NoisNumPer; ni++ {
+					mid := <-c.midNoise
 					task := c.NoisTasks[ran.Intn(len(c.NoisTasks))].Clone()
-					go c.Request(task, c.Me, true)
+					go c.RequestV2(task, c.Me, true, mid)
 				}
 			}()
 		}
@@ -207,7 +227,7 @@ func (c *Thing) concurrentReq(num int, ran *rand.Rand) {
 func (c *Thing) Request(task *thingms.Task, sender uint64, isNoise bool) {
 	mid := <-c.mid
 	if isNoise {
-		mid = (1<<19) | mid
+		mid = (1 << 19) | mid
 	}
 
 	msg := msgserver.NewMessage(idutils.MessageID(idutils.SvrId32(sender), idutils.CliId32(sender), mid),
@@ -224,5 +244,27 @@ func (c *Thing) Request(task *thingms.Task, sender uint64, isNoise bool) {
 	if _, err := czmqutils.Send(sockItem, msg, goczmq.FlagNone); err != nil {
 		log.Println("czmq send failed: ", err)
 	}
-	log.Printf("[%s] send a message:%s, size: %d\n", timeutils.Time2string(msg.SendTime()), idutils.String(msg.ID()), len(msg))
+	// log.Printf("[%s] send a message:%s, size: %d\n", timeutils.Time2string(msg.SendTime()), idutils.String(msg.ID()), len(msg))
+}
+
+func (c *Thing) RequestV2(task *thingms.Task, sender uint64, isNoise bool, mid uint32) {
+	if isNoise {
+		mid = (1 << 19) | mid
+	}
+
+	msg := msgserver.NewMessage(idutils.MessageID(idutils.SvrId32(sender), idutils.CliId32(sender), mid),
+		sender, wangID, msgserver.TaskMsg, task.ToBytes())
+
+	sockItem, err := czmqutils.GetSock(c.MsgZmqEnd[c.SvrIdx], goczmq.Push)
+	if err != nil {
+		log.Println("czmq get sock failed: ", err)
+		return
+	}
+	defer sockItem.Free()
+
+	msg.SetSendTime()
+	if _, err := czmqutils.Send(sockItem, msg, goczmq.FlagNone); err != nil {
+		log.Println("czmq send failed: ", err)
+	}
+	// log.Printf("[%s] send a message:%s, size: %d\n", timeutils.Time2string(msg.SendTime()), idutils.String(msg.ID()), len(msg))
 }

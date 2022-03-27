@@ -8,12 +8,15 @@
     "tcp://10.208.104.9:8081",
     ""
   ],
-  "Mode":  "cycle",
+  "Mode":  "linear",
   "LoadNumPer": 1,
   "NoisNumPer": 0,
   "Period":"10ms",
   "NumConn":  0,
-  "TotalTime":"40s",
+  "TotalTime":"14s",
+  "MaxTaskPerSec": 170,
+  "LinearRatio": 70,
   "PeakTime":  "",
   "PeakNum":  0
+  
 }
