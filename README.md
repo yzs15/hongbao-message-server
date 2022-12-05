@@ -47,3 +47,6 @@ Usage of ./bin/logserverd:
   -f value
         the path to log file
 ```
+
+# 测试脚本
+在script里面
